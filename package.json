@@ -1,0 +1,22 @@
+{
+  "name": "gift-bot",
+  "version": "1.0.0",
+  "description": "Surprise gift delivery Telegram bot for couples in Uzbekistan",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "bot": "node bot/index.js",
+    "dev": "nodemon server/index.js"
+  },
+  "dependencies": {
+    "telegraf": "^4.16.3",
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "multer": "^1.4.5-lts.1",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}

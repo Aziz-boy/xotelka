@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>💝 Sevgili Sovg'a</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --bg: #0d0d0d;
+      --bg2: #161616;
+      --bg3: #1f1f1f;
+      --gold: #c9a84c;
+      --gold2: #f0d080;
+      --pink: #e8516a;
+      --pink2: #ff7b9a;
+      --text: #f0f0f0;
+      --text2: #aaaaaa;
+      --border: #2e2e2e;
+      --radius: 16px;
+      --shadow: 0 4px 24px rgba(0,0,0,0.5);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, #0d0d0d 0%, #1a0a10 100%);
+      padding: 24px 20px 20px;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .header h1 {
+      font-size: 22px;
+      font-weight: 700;
+      background: linear-gradient(90deg, var(--gold), var(--gold2), var(--pink2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .header p { color: var(--text2); font-size: 13px; margin-top: 4px; }
+
+    /* ── Language toggle ── */
+    .lang-toggle {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      padding: 16px 20px 0;
+    }
+    .lang-btn {
+      padding: 6px 20px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: var(--bg3);
+      color: var(--text2);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .lang-btn.active {
+      background: var(--gold);
+      color: #000;
+      font-weight: 700;
+      border-color: var(--gold);
+    }
+
+    /* ── Steps indicator ── */
+    .steps {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      padding: 16px 20px;
+    }
+    .step-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--border);
+      transition: all 0.3s;
+    }
+    .step-dot.active { background: var(--gold); width: 24px; border-radius: 4px; }
+    .step-dot.done { background: var(--pink); }
+
+    /* ── Screen ── */
+    .screen { display: none; padding: 0 20px 100px; }
+    .screen.active { display: block; }
+
+    /* ── Section title ── */
+    .section-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--gold2);
+      margin: 20px 0 12px;
+    }
+    .section-sub {
+      color: var(--text2);
+      font-size: 13px;
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+
+    /* ── Package cards ── */
+    .packages-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .pkg-card {
+      background: var(--bg2);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 12px;
+      cursor: pointer;
+      transition: all 0.25s;
+      text-align: center;
+      position: relative;
+    }
+    .pkg-card:active { transform: scale(0.97); }
+    .pkg-card.selected {
+      border-color: var(--gold);
+      background: #1a1500;
+      box-shadow: 0 0 20px rgba(201,168,76,0.2);
+    }
+    .pkg-card .emoji { font-size: 36px; margin-bottom: 8px; display: block; }
+    .pkg-card .pkg-name { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+    .pkg-card .pkg-desc { font-size: 11px; color: var(--text2); line-height: 1.4; margin-bottom: 8px; }
+    .pkg-card .pkg-price {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--gold);
+    }
+    .pkg-card .check {
+      position: absolute;
+      top: 8px; right: 8px;
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      background: var(--gold);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+    }
+    .pkg-card.selected .check { display: flex; }
+
+    /* ── Form inputs ── */
+    .form-group { margin-bottom: 16px; }
+    .form-label {
+      display: block;
+      font-size: 12px;
+      color: var(--text2);
+      margin-bottom: 6px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .form-input, .form-textarea, .form-select {
+      width: 100%;
+      background: var(--bg3);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      color: var(--text);
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s;
+      font-family: inherit;
+    }
+    .form-input:focus, .form-textarea:focus, .form-select:focus {
+      border-color: var(--gold);
+    }
+    .form-textarea { resize: none; height: 90px; }
+    .form-select { appearance: none; cursor: pointer; }
+    .form-select option { background: var(--bg3); }
+
+    /* ── Order summary ── */
+    .summary-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+      font-size: 14px;
+      gap: 12px;
+    }
+    .summary-row:last-child { margin-bottom: 0; }
+    .summary-label { color: var(--text2); flex-shrink: 0; }
+    .summary-value { color: var(--text); text-align: right; font-weight: 500; }
+    .summary-total .summary-label { color: var(--gold); font-weight: 700; font-size: 16px; }
+    .summary-total .summary-value { color: var(--gold); font-weight: 700; font-size: 18px; }
+    .divider { height: 1px; background: var(--border); margin: 12px 0; }
+
+    /* ── Payment box ── */
+    .payment-box {
+      background: linear-gradient(135deg, #1a1200, #0f0a00);
+      border: 1.5px solid var(--gold);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .payment-box h3 {
+      color: var(--gold2);
+      font-size: 15px;
+      margin-bottom: 14px;
+    }
+    .card-number {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: 2px;
+      margin-bottom: 6px;
+      font-family: monospace;
+    }
+    .card-holder { color: var(--text2); font-size: 13px; margin-bottom: 12px; }
+    .copy-btn {
+      background: var(--gold);
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .amount-due {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid rgba(201,168,76,0.3);
+      color: var(--gold2);
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    /* ── Status screen ── */
+    .status-icon { font-size: 64px; text-align: center; margin: 30px 0 20px; }
+    .status-title {
+      text-align: center;
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: var(--gold2);
+    }
+    .status-sub {
+      text-align: center;
+      color: var(--text2);
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 30px;
+    }
+    .status-badge {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 20px;
+      margin-bottom: 12px;
+      font-size: 14px;
+    }
+    .badge-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--gold);
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0%,100% { opacity: 1; } 50% { opacity: 0.3; }
+    }
+
+    /* ── Bottom button ── */
+    .bottom-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      padding: 16px 20px;
+      background: linear-gradient(to top, var(--bg) 80%, transparent);
+    }
+    .btn-primary {
+      width: 100%;
+      background: linear-gradient(135deg, var(--gold), var(--gold2));
+      color: #000;
+      font-size: 16px;
+      font-weight: 700;
+      border: none;
+      border-radius: 14px;
+      padding: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.3px;
+    }
+    .btn-primary:active { transform: scale(0.98); opacity: 0.9; }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-secondary {
+      width: 100%;
+      background: transparent;
+      color: var(--text2);
+      font-size: 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    /* ── Tracking screen ── */
+    .track-header {
+      text-align: center;
+      padding: 24px 0 20px;
+    }
+    .track-pkg-emoji { font-size: 52px; display: block; margin-bottom: 10px; }
+    .track-pkg-name {
+      font-size: 17px; font-weight: 700;
+      background: linear-gradient(90deg, var(--gold), var(--gold2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .track-order-id {
+      font-size: 12px; color: var(--text2);
+      font-family: monospace; margin-top: 4px;
+    }
+
+    /* Timeline */
+    .timeline { padding: 8px 0 20px; position: relative; }
+    .tl-item {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      margin-bottom: 0;
+      position: relative;
+    }
+    .tl-left {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 36px;
+      flex-shrink: 0;
+    }
+    .tl-dot {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      background: var(--bg2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+      position: relative;
+      z-index: 1;
+      transition: all 0.4s;
+      flex-shrink: 0;
+    }
+    .tl-dot.done {
+      background: linear-gradient(135deg, #1a3a00, #2a5a00);
+      border-color: #4caf50;
+      box-shadow: 0 0 12px rgba(76,175,80,0.3);
+    }
+    .tl-dot.active {
+      background: linear-gradient(135deg, #1a1000, #2e1e00);
+      border-color: var(--gold);
+      box-shadow: 0 0 16px rgba(201,168,76,0.4);
+      animation: tl-pulse 2s infinite;
+    }
+    .tl-dot.pending { opacity: 0.35; }
+    @keyframes tl-pulse {
+      0%,100% { box-shadow: 0 0 16px rgba(201,168,76,0.4); }
+      50% { box-shadow: 0 0 28px rgba(201,168,76,0.7); }
+    }
+    .tl-line {
+      width: 2px;
+      flex: 1;
+      min-height: 36px;
+      background: var(--border);
+      margin: 0 auto;
+      transition: background 0.4s;
+    }
+    .tl-line.done { background: #4caf50; }
+    .tl-line.hidden { display: none; }
+
+    .tl-content {
+      padding: 6px 0 28px;
+      flex: 1;
+    }
+    .tl-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text2);
+      transition: color 0.4s;
+    }
+    .tl-title.done { color: #81c784; }
+    .tl-title.active { color: var(--gold2); }
+    .tl-time {
+      font-size: 11px;
+      color: var(--text2);
+      margin-top: 3px;
+      opacity: 0.7;
+    }
+    .tl-sub {
+      font-size: 12px;
+      color: var(--text2);
+      margin-top: 4px;
+      line-height: 1.5;
+      opacity: 0;
+      transition: opacity 0.4s;
+    }
+    .tl-sub.show { opacity: 1; }
+
+    /* Delivered celebration */
+    .delivered-card {
+      background: linear-gradient(135deg, #0a1f00, #0f2e00);
+      border: 1.5px solid #4caf50;
+      border-radius: var(--radius);
+      padding: 24px 20px;
+      text-align: center;
+      margin-bottom: 16px;
+      display: none;
+    }
+    .delivered-card.show { display: block; }
+    .delivered-card .big-emoji { font-size: 48px; margin-bottom: 12px; }
+    .delivered-card h3 { color: #81c784; font-size: 18px; margin-bottom: 8px; }
+    .delivered-card p { color: #aaa; font-size: 13px; line-height: 1.5; }
+
+    /* Refresh indicator */
+    .refresh-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      color: var(--text2);
+      font-size: 12px;
+      padding: 8px 0 4px;
+    }
+    .spin {
+      width: 12px; height: 12px;
+      border: 2px solid var(--border);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      top: 20px; left: 50%; transform: translateX(-50%);
+      background: var(--bg3);
+      border: 1px solid var(--gold);
+      color: var(--text);
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-size: 14px;
+      z-index: 999;
+      opacity: 0;
+      transition: opacity 0.3s;
+      white-space: nowrap;
+    }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Header -->
+<div class="header">
+  <h1>💝 Sevgili Sovg'a</h1>
+  <p id="header-sub">Sevgiliningizga maxfiy sovg'a</p>
+</div>
+
+<!-- Language toggle -->
+<div class="lang-toggle">
+  <button class="lang-btn active" onclick="setLang('uz')">O'zbek</button>
+  <button class="lang-btn" onclick="setLang('ru')">Русский</button>
+</div>
+
+<!-- Step dots -->
+<div class="steps">
+  <div class="step-dot active" id="dot-0"></div>
+  <div class="step-dot" id="dot-1"></div>
+  <div class="step-dot" id="dot-2"></div>
+  <div class="step-dot" id="dot-3"></div>
+  <div class="step-dot" id="dot-4"></div>
+</div>
+
+<!-- ══ SCREEN 1: Choose package ══ -->
+<div class="screen active" id="screen-0">
+  <p class="section-title" data-uz="🎁 Sovg'ani tanlang" data-ru="🎁 Выберите подарок">🎁 Sovg'ani tanlang</p>
+  <p class="section-sub" data-uz="Sevgiliningizga qaysi sovg'ani yubormoqchisiz?" data-ru="Какой подарок вы хотите отправить любимой?">
+    Sevgiliningizga qaysi sovg'ani yubormoqchisiz?
+  </p>
+  <div class="packages-grid" id="packages-grid">
+    <!-- Filled by JS -->
+  </div>
+  <div class="bottom-bar">
+    <button class="btn-primary" id="btn-next-0" onclick="goToScreen(1)" disabled
+      data-uz="Davom etish →" data-ru="Продолжить →">Davom etish →</button>
+  </div>
+</div>
+
+<!-- ══ SCREEN 2: Recipient info ══ -->
+<div class="screen" id="screen-1">
+  <p class="section-title" data-uz="👧 Qabul qiluvchi ma'lumotlari" data-ru="👧 Данные получателя">
+    👧 Qabul qiluvchi ma'lumotlari
+  </p>
+  <p class="section-sub" data-uz="Sevgiliningiz haqida ma'lumot kiriting. U hech narsa bilmaydi 🤫" data-ru="Введите данные любимой. Она ничего не узнает 🤫">
+    Sevgiliningiz haqida ma'lumot kiriting. U hech narsa bilmaydi 🤫
+  </p>
+
+  <div class="form-group">
+    <label class="form-label" data-uz="Ismi" data-ru="Имя">Ismi</label>
+    <input class="form-input" id="recipientName" type="text" placeholder="Masalan: Malika"
+      data-ph-uz="Masalan: Malika" data-ph-ru="Например: Малика"/>
+  </div>
+  <div class="form-group">
+    <label class="form-label" data-uz="Telefon raqami" data-ru="Номер телефона">Telefon raqami</label>
+    <input class="form-input" id="recipientPhone" type="tel" placeholder="+998 90 123 45 67"/>
+  </div>
+  <div class="form-group">
+    <label class="form-label" data-uz="Manzili (to'liq)" data-ru="Адрес (полный)">Manzili (to'liq)</label>
+    <input class="form-input" id="recipientAddress" type="text"
+      placeholder="Ko'cha, uy, kvartira..."
+      data-ph-uz="Ko'cha, uy, kvartira..." data-ph-ru="Улица, дом, квартира..."/>
+  </div>
+  <div class="form-group">
+    <label class="form-label" data-uz="Yetkazish sanasi" data-ru="Дата доставки">Yetkazish sanasi</label>
+    <input class="form-input" id="deliveryDate" type="date"/>
+  </div>
+  <div class="form-group">
+    <label class="form-label" data-uz="Yetkazish vaqti" data-ru="Время доставки">Yetkazish vaqti</label>
+    <select class="form-select" id="deliveryTime">
+      <option value="">-- tanlang --</option>
+      <option value="09:00-12:00">09:00 – 12:00</option>
+      <option value="12:00-15:00">12:00 – 15:00</option>
+      <option value="15:00-18:00">15:00 – 18:00</option>
+      <option value="18:00-21:00">18:00 – 21:00</option>
+    </select>
+  </div>
+  <div class="form-group">
+    <label class="form-label" data-uz="💌 Xabar (ixtiyoriy)" data-ru="💌 Сообщение (необязательно)">💌 Xabar (ixtiyoriy)</label>
+    <textarea class="form-textarea" id="message"
+      placeholder="Sevgilim, seni juda yaxshi ko'raman..."
+      data-ph-uz="Sevgilim, seni juda yaxshi ko'raman..."
+      data-ph-ru="Любимая, я тебя очень люблю..."></textarea>
+  </div>
+
+  <div class="bottom-bar">
+    <button class="btn-primary" onclick="validateAndNext()" data-uz="Davom etish →" data-ru="Продолжить →">Davom etish →</button>
+    <button class="btn-secondary" onclick="goToScreen(0)" data-uz="← Orqaga" data-ru="← Назад">← Orqaga</button>
+  </div>
+</div>
+
+<!-- ══ SCREEN 3: Summary + Payment ══ -->
+<div class="screen" id="screen-2">
+  <p class="section-title" data-uz="📋 Buyurtma xulosasi" data-ru="📋 Сводка заказа">📋 Buyurtma xulosasi</p>
+
+  <div class="summary-card" id="summary-card">
+    <!-- filled by JS -->
+  </div>
+
+  <div class="payment-box">
+    <h3 data-uz="💳 To'lov ma'lumotlari" data-ru="💳 Реквизиты для оплаты">💳 To'lov ma'lumotlari</h3>
+    <div class="card-number" id="card-number">•••• •••• •••• ••••</div>
+    <div class="card-holder" id="card-holder">—</div>
+    <button class="copy-btn" onclick="copyCard()" data-uz="📋 Nusxa olish" data-ru="📋 Скопировать">📋 Nusxa olish</button>
+    <div class="amount-due" id="amount-due"></div>
+  </div>
+
+  <p class="section-sub" data-uz="To'lov qilgach, chekni @admin ga yuboring. Biz tasdiqlashimizdan so'ng buyurtmangiz bajariladi." data-ru="После оплаты отправьте чек @admin. После подтверждения ваш заказ будет выполнен.">
+    To'lov qilgach, chekni @admin ga yuboring. Biz tasdiqlashimizdan so'ng buyurtmangiz bajariladi.
+  </p>
+
+  <div class="bottom-bar">
+    <button class="btn-primary" onclick="placeOrder()" id="btn-order"
+      data-uz="✅ Buyurtma berish" data-ru="✅ Оформить заказ">✅ Buyurtma berish</button>
+    <button class="btn-secondary" onclick="goToScreen(1)" data-uz="← Orqaga" data-ru="← Назад">← Orqaga</button>
+  </div>
+</div>
+
+<!-- ══ SCREEN 4: Success ══ -->
+<div class="screen" id="screen-3">
+  <div class="status-icon">🎉</div>
+  <div class="status-title" data-uz="Buyurtma qabul qilindi!" data-ru="Заказ принят!">Buyurtma qabul qilindi!</div>
+  <div class="status-sub" data-uz="Endi to'lov chekingizni yuborish qoldi. Quyidagi tugmani bosing." data-ru="Теперь отправьте чек об оплате. Нажмите кнопку ниже.">
+    Endi to'lov chekingizni yuborish qoldi. Quyidagi tugmani bosing.
+  </div>
+
+  <div class="status-badge">
+    <div class="badge-dot"></div>
+    <span data-uz="Tasdiqlash kutilmoqda..." data-ru="Ожидает подтверждения...">Tasdiqlash kutilmoqda...</span>
+  </div>
+
+  <div class="summary-card" id="final-order-id" style="margin-top:16px;">
+    <!-- order id filled by JS -->
+  </div>
+
+  <div class="bottom-bar">
+    <button class="btn-primary" onclick="openAdminForReceipt()" id="btn-send-receipt"
+      data-uz="📤 Chekni yuborish" data-ru="📤 Отправить чек">📤 Chekni yuborish</button>
+    <button class="btn-secondary" onclick="goToTracking()"
+      data-uz="📍 Buyurtmani kuzatish" data-ru="📍 Отслеживать заказ">📍 Buyurtmani kuzatish</button>
+  </div>
+</div>
+
+<!-- ══ SCREEN 5: Live Tracking ══ -->
+<div class="screen" id="screen-4">
+
+  <div class="track-header">
+    <span class="track-pkg-emoji" id="trk-emoji">🎁</span>
+    <div class="track-pkg-name" id="trk-pkg-name"></div>
+    <div class="track-order-id" id="trk-order-id"></div>
+  </div>
+
+  <!-- Delivered celebration (hidden until done) -->
+  <div class="delivered-card" id="delivered-card">
+    <div class="big-emoji">🎉</div>
+    <h3 data-uz="Yetkazildi!" data-ru="Доставлено!">Yetkazildi!</h3>
+    <p data-uz="Sovg'angiz sevgiliningizga muvaffaqiyatli topshirildi. Rahmat!" data-ru="Ваш подарок успешно доставлен любимой. Спасибо!">
+      Sovg'angiz sevgiliningizga muvaffaqiyatli topshirildi. Rahmat!
+    </p>
+  </div>
+
+  <!-- Timeline -->
+  <div class="timeline" id="timeline">
+
+    <div class="tl-item" id="tl-pending_payment">
+      <div class="tl-left">
+        <div class="tl-dot" id="dot-pending_payment">💳</div>
+        <div class="tl-line" id="line-pending_payment"></div>
+      </div>
+      <div class="tl-content">
+        <div class="tl-title" id="title-pending_payment"
+          data-uz="To'lov kutilmoqda" data-ru="Ожидание оплаты">To'lov kutilmoqda</div>
+        <div class="tl-time" id="time-pending_payment"></div>
+        <div class="tl-sub" id="sub-pending_payment"
+          data-uz="Karta raqamiga to'lov qiling va chekni yuboring" data-ru="Оплатите по номеру карты и отправьте чек">
+          Karta raqamiga to'lov qiling va chekni yuboring
+        </div>
+      </div>
+    </div>
+
+    <div class="tl-item" id="tl-payment_submitted">
+      <div class="tl-left">
+        <div class="tl-dot" id="dot-payment_submitted">📤</div>
+        <div class="tl-line" id="line-payment_submitted"></div>
+      </div>
+      <div class="tl-content">
+        <div class="tl-title" id="title-payment_submitted"
+          data-uz="Chek yuborildi" data-ru="Чек отправлен">Chek yuborildi</div>
+        <div class="tl-time" id="time-payment_submitted"></div>
+        <div class="tl-sub" id="sub-payment_submitted"
+          data-uz="Admin tekshirmoqda, tez orada tasdiqlanadi" data-ru="Администратор проверяет, скоро подтвердит">
+          Admin tekshirmoqda, tez orada tasdiqlanadi
+        </div>
+      </div>
+    </div>
+
+    <div class="tl-item" id="tl-confirmed">
+      <div class="tl-left">
+        <div class="tl-dot" id="dot-confirmed">✅</div>
+        <div class="tl-line" id="line-confirmed"></div>
+      </div>
+      <div class="tl-content">
+        <div class="tl-title" id="title-confirmed"
+          data-uz="Buyurtma tasdiqlandi" data-ru="Заказ подтверждён">Buyurtma tasdiqlandi</div>
+        <div class="tl-time" id="time-confirmed"></div>
+        <div class="tl-sub" id="sub-confirmed"
+          data-uz="To'lov qabul qilindi, sovg'a tayyorlanmoqda" data-ru="Оплата принята, подарок готовится">
+          To'lov qabul qilindi, sovg'a tayyorlanmoqda
+        </div>
+      </div>
+    </div>
+
+    <div class="tl-item" id="tl-delivering">
+      <div class="tl-left">
+        <div class="tl-dot" id="dot-delivering">🚚</div>
+        <div class="tl-line" id="line-delivering"></div>
+      </div>
+      <div class="tl-content">
+        <div class="tl-title" id="title-delivering"
+          data-uz="Yo'lda!" data-ru="В пути!">Yo'lda!</div>
+        <div class="tl-time" id="time-delivering"></div>
+        <div class="tl-sub" id="sub-delivering"
+          data-uz="Kuryer sovg'angizni yetkazib bormoqda" data-ru="Курьер доставляет ваш подарок">
+          Kuryer sovg'angizni yetkazib bormoqda
+        </div>
+      </div>
+    </div>
+
+    <div class="tl-item" id="tl-delivered">
+      <div class="tl-left">
+        <div class="tl-dot" id="dot-delivered">🎉</div>
+        <div class="tl-line hidden"></div>
+      </div>
+      <div class="tl-content">
+        <div class="tl-title" id="title-delivered"
+          data-uz="Yetkazildi!" data-ru="Доставлено!">Yetkazildi!</div>
+        <div class="tl-time" id="time-delivered"></div>
+        <div class="tl-sub" id="sub-delivered"
+          data-uz="Sovg'a muvaffaqiyatli topshirildi 💝" data-ru="Подарок успешно вручён 💝">
+          Sovg'a muvaffaqiyatli topshirildi 💝
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /timeline -->
+
+  <div class="refresh-row" id="refresh-row">
+    <div class="spin"></div>
+    <span data-uz="Holat yangilanmoqda..." data-ru="Обновление статуса...">Holat yangilanmoqda...</span>
+  </div>
+
+  <div class="bottom-bar">
+    <button class="btn-secondary" onclick="goToScreen(3)"
+      data-uz="← Orqaga" data-ru="← Назад">← Orqaga</button>
+  </div>
+</div>
+
+<script>
+  // ── Telegram Web App init ─────────────────────────────────
+  const tg = window.Telegram?.WebApp;
+  if (tg) {
+    tg.expand();
+    tg.setHeaderColor('#0d0d0d');
+  }
+
+  const tgUser = tg?.initDataUnsafe?.user || {};
+
+  // ── State ─────────────────────────────────────────────────
+  let lang = 'uz';
+  let selectedPkg = null;
+  let packages = [];
+  let currentOrder = null;
+
+  // ── Language ──────────────────────────────────────────────
+  function setLang(l) {
+    lang = l;
+    document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.lang-btn[onclick="setLang('${l}')"]`).classList.add('active');
+    document.querySelectorAll('[data-uz]').forEach(el => {
+      el.textContent = el.getAttribute(`data-${l}`);
+    });
+    document.querySelectorAll('[data-ph-uz]').forEach(el => {
+      el.placeholder = el.getAttribute(`data-ph-${l}`);
+    });
+    if (packages.length) renderPackages();
+  }
+
+  // ── Screens ───────────────────────────────────────────────
+  function goToScreen(n) {
+    document.querySelectorAll('.screen').forEach((s, i) => {
+      s.classList.toggle('active', i === n);
+    });
+    document.querySelectorAll('.step-dot').forEach((d, i) => {
+      d.classList.remove('active', 'done');
+      if (i < n) d.classList.add('done');
+      else if (i === n) d.classList.add('active');
+    });
+    if (n === 2) buildSummary();
+    window.scrollTo(0, 0);
+  }
+
+  // ── Load packages ─────────────────────────────────────────
+  async function loadPackages() {
+    try {
+      const res = await fetch('/api/packages');
+      const data = await res.json();
+      packages = data.packages;
+      renderPackages();
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  function renderPackages() {
+    const grid = document.getElementById('packages-grid');
+    grid.innerHTML = packages.map(pkg => `
+      <div class="pkg-card ${selectedPkg?.id === pkg.id ? 'selected' : ''}"
+           onclick="selectPkg('${pkg.id}')">
+        <div class="check">✓</div>
+        <span class="emoji">${pkg.emoji}</span>
+        <div class="pkg-name">${lang === 'uz' ? pkg.name_uz : pkg.name_ru}</div>
+        <div class="pkg-desc">${lang === 'uz' ? pkg.desc_uz : pkg.desc_ru}</div>
+        <div class="pkg-price">${pkg.price.toLocaleString()} so'm</div>
+      </div>
+    `).join('');
+  }
+
+  function selectPkg(id) {
+    selectedPkg = packages.find(p => p.id === id);
+    renderPackages();
+    document.getElementById('btn-next-0').disabled = false;
+    if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+  }
+
+  // ── Validate recipient form ────────────────────────────────
+  function validateAndNext() {
+    const name = document.getElementById('recipientName').value.trim();
+    const phone = document.getElementById('recipientPhone').value.trim();
+    const address = document.getElementById('recipientAddress').value.trim();
+    if (!name || !phone || !address) {
+      showToast(lang === 'uz' ? '⚠️ Barcha majburiy maydonlarni to\'ldiring' : '⚠️ Заполните все обязательные поля');
+      return;
+    }
+    goToScreen(2);
+  }
+
+  // ── Build summary ─────────────────────────────────────────
+  function buildSummary() {
+    const pkg = selectedPkg;
+    const name = document.getElementById('recipientName').value;
+    const phone = document.getElementById('recipientPhone').value;
+    const address = document.getElementById('recipientAddress').value;
+    const date = document.getElementById('deliveryDate').value;
+    const time = document.getElementById('deliveryTime').value;
+    const msg = document.getElementById('message').value;
+
+    document.getElementById('summary-card').innerHTML = `
+      <div class="summary-row">
+        <span class="summary-label">${lang === 'uz' ? 'Sovg\'a' : 'Подарок'}</span>
+        <span class="summary-value">${pkg.emoji} ${lang === 'uz' ? pkg.name_uz : pkg.name_ru}</span>
+      </div>
+      <div class="summary-row">
+        <span class="summary-label">${lang === 'uz' ? 'Ismi' : 'Имя'}</span>
+        <span class="summary-value">${name}</span>
+      </div>
+      <div class="summary-row">
+        <span class="summary-label">${lang === 'uz' ? 'Telefon' : 'Телефон'}</span>
+        <span class="summary-value">${phone}</span>
+      </div>
+      <div class="summary-row">
+        <span class="summary-label">${lang === 'uz' ? 'Manzil' : 'Адрес'}</span>
+        <span class="summary-value">${address}</span>
+      </div>
+      ${date ? `<div class="summary-row">
+        <span class="summary-label">${lang === 'uz' ? 'Sana' : 'Дата'}</span>
+        <span class="summary-value">${date} ${time}</span>
+      </div>` : ''}
+      ${msg ? `<div class="summary-row">
+        <span class="summary-label">💌</span>
+        <span class="summary-value" style="font-style:italic;color:#aaa">${msg}</span>
+      </div>` : ''}
+      <div class="divider"></div>
+      <div class="summary-row summary-total">
+        <span class="summary-label">${lang === 'uz' ? 'Jami' : 'Итого'}</span>
+        <span class="summary-value">${pkg.price.toLocaleString()} so'm</span>
+      </div>
+    `;
+
+    // Payment card info — fetched from config via meta or hardcoded in production
+    document.getElementById('amount-due').innerHTML =
+      `${lang === 'uz' ? 'To\'lov miqdori' : 'Сумма к оплате'}: <strong>${pkg.price.toLocaleString()} so'm</strong>`;
+  }
+
+  // ── Copy card number ──────────────────────────────────────
+  function copyCard() {
+    const card = document.getElementById('card-number').textContent;
+    navigator.clipboard?.writeText(card.replace(/\s/g, '')).then(() => {
+      showToast(lang === 'uz' ? '✅ Nusxa olindi!' : '✅ Скопировано!');
+    });
+  }
+
+  // ── Place order ───────────────────────────────────────────
+  async function placeOrder() {
+    const btn = document.getElementById('btn-order');
+    btn.disabled = true;
+    btn.textContent = lang === 'uz' ? 'Yuborilmoqda...' : 'Отправка...';
+
+    const body = {
+      telegramUserId: tgUser.id || 'unknown',
+      telegramUsername: tgUser.username || '',
+      packageId: selectedPkg.id,
+      recipientName: document.getElementById('recipientName').value.trim(),
+      recipientPhone: document.getElementById('recipientPhone').value.trim(),
+      recipientAddress: document.getElementById('recipientAddress').value.trim(),
+      deliveryDate: document.getElementById('deliveryDate').value,
+      deliveryTime: document.getElementById('deliveryTime').value,
+      message: document.getElementById('message').value.trim(),
+      language: lang,
+    };
+
+    try {
+      const res = await fetch('/api/order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
+
+      currentOrder = data;
+
+      document.getElementById('final-order-id').innerHTML = `
+        <div class="summary-row">
+          <span class="summary-label">${lang === 'uz' ? 'Buyurtma ID' : 'ID заказа'}</span>
+          <span class="summary-value" style="font-family:monospace">#${data.orderId.slice(0,8).toUpperCase()}</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">${lang === 'uz' ? 'To\'lov' : 'Оплата'}</span>
+          <span class="summary-value" style="color:var(--gold)">${data.formattedPrice}</span>
+        </div>
+      `;
+
+      goToScreen(3);
+      if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+    } catch (e) {
+      showToast('❌ Xatolik: ' + e.message);
+      btn.disabled = false;
+      btn.textContent = lang === 'uz' ? '✅ Buyurtma berish' : '✅ Оформить заказ';
+    }
+  }
+
+  // ── Send receipt: notify server, then open admin chat ─────
+  async function openAdminForReceipt() {
+    if (currentOrder) {
+      try {
+        await fetch(`/api/order/${currentOrder.orderId}/payment-sent`, { method: 'POST' });
+      } catch(e) {}
+    }
+    // Open bot / admin to send receipt
+    tg?.close();
+    window.open('https://t.me/YourAdminUsername', '_blank');
+  }
+
+  // ── Toast ─────────────────────────────────────────────────
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2800);
+  }
+
+  // ── Fetch card info (injected by server in production) ────
+  async function loadConfig() {
+    try {
+      const res = await fetch('/api/config');
+      const cfg = await res.json();
+      document.getElementById('card-number').textContent = cfg.card || '8600 •••• •••• ••••';
+      document.getElementById('card-holder').textContent = cfg.name || 'Admin';
+    } catch(e) {}
+  }
+
+  // ── Tracking ──────────────────────────────────────────────
+  const STATUS_ORDER = ['pending_payment', 'payment_submitted', 'confirmed', 'delivering', 'delivered'];
+  let trackingInterval = null;
+
+  function goToTracking() {
+    if (!currentOrder) return;
+    goToScreen(4);
+    renderTrackingShell();
+    startTracking();
+  }
+
+  function renderTrackingShell() {
+    const pkg = selectedPkg || {};
+    document.getElementById('trk-emoji').textContent = pkg.emoji || '🎁';
+    document.getElementById('trk-pkg-name').textContent =
+      lang === 'uz' ? (pkg.name_uz || '') : (pkg.name_ru || '');
+    document.getElementById('trk-order-id').textContent =
+      '#' + (currentOrder.orderId || '').slice(0, 8).toUpperCase();
+
+    // Apply lang to all timeline elements
+    document.querySelectorAll('#screen-4 [data-uz]').forEach(el => {
+      el.textContent = el.getAttribute(`data-${lang}`);
+    });
+  }
+
+  async function startTracking() {
+    if (trackingInterval) clearInterval(trackingInterval);
+    await fetchAndRenderStatus();
+    trackingInterval = setInterval(fetchAndRenderStatus, 5000); // poll every 5s
+  }
+
+  async function fetchAndRenderStatus() {
+    if (!currentOrder?.orderId) return;
+    try {
+      const res = await fetch(`/api/order/${currentOrder.orderId}`);
+      const data = await res.json();
+      if (data.success) renderTimeline(data.order);
+    } catch (e) {}
+  }
+
+  function renderTimeline(order) {
+    const currentIdx = STATUS_ORDER.indexOf(order.status);
+
+    STATUS_ORDER.forEach((status, i) => {
+      const dot = document.getElementById(`dot-${status}`);
+      const line = document.getElementById(`line-${status}`);
+      const title = document.getElementById(`title-${status}`);
+      const sub = document.getElementById(`sub-${status}`);
+      const timeEl = document.getElementById(`time-${status}`);
+      if (!dot) return;
+
+      // Clear classes
+      dot.classList.remove('done', 'active', 'pending');
+      if (title) title.classList.remove('done', 'active');
+      if (line) line.classList.remove('done');
+
+      if (i < currentIdx) {
+        // Past step — green done
+        dot.classList.add('done');
+        if (title) title.classList.add('done');
+        if (line) line.classList.add('done');
+        if (sub) sub.classList.add('show');
+        dot.textContent = '✓';
+      } else if (i === currentIdx) {
+        // Current step — gold pulsing
+        dot.classList.add('active');
+        if (title) title.classList.add('active');
+        if (sub) sub.classList.add('show');
+        // restore original emoji for active step
+        const emojis = { pending_payment:'💳', payment_submitted:'📤', confirmed:'✅', delivering:'🚚', delivered:'🎉' };
+        dot.textContent = emojis[status] || '●';
+        // Set timestamp
+        if (timeEl && order.updatedAt) {
+          timeEl.textContent = formatTime(order.updatedAt);
+        }
+      } else {
+        // Future step — dim
+        dot.classList.add('pending');
+      }
+    });
+
+    // Show delivered celebration card
+    const card = document.getElementById('delivered-card');
+    if (order.status === 'delivered') {
+      card.classList.add('show');
+      card.querySelector('h3').textContent = lang === 'uz' ? 'Yetkazildi!' : 'Доставлено!';
+      card.querySelector('p').textContent = lang === 'uz'
+        ? 'Sovg\'angiz sevgiliningizga muvaffaqiyatli topshirildi. Rahmat!'
+        : 'Ваш подарок успешно доставлен любимой. Спасибо!';
+      // Stop polling
+      if (trackingInterval) { clearInterval(trackingInterval); trackingInterval = null; }
+      document.getElementById('refresh-row').style.display = 'none';
+      if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+    } else {
+      card.classList.remove('show');
+    }
+  }
+
+  function formatTime(iso) {
+    try {
+      const d = new Date(iso);
+      return d.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
+    } catch { return ''; }
+  }
+
+  // Stop polling when user leaves tracking screen
+  const origGoToScreen = goToScreen;
+  function goToScreen(n) {
+    if (n !== 4 && trackingInterval) {
+      clearInterval(trackingInterval);
+      trackingInterval = null;
+    }
+    origGoToScreen(n);
+  }
+
+  // ── Init ──────────────────────────────────────────────────
+  loadPackages();
+  loadConfig();
+
+  // Set today as min date for delivery
+  document.getElementById('deliveryDate').min = new Date().toISOString().split('T')[0];
+</script>
+</body>
+</html>

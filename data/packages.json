@@ -1,0 +1,62 @@
+[
+  {
+    "id": "flowers",
+    "emoji": "🌸",
+    "name_uz": "Gullar to'plami",
+    "name_ru": "Букет цветов",
+    "desc_uz": "Chiroyli, yangi gullar to'plami sevgiliningizga",
+    "desc_ru": "Красивый свежий букет цветов для вашей любимой",
+    "price": 120000,
+    "image": "flowers.jpg"
+  },
+  {
+    "id": "chocolates",
+    "emoji": "🍫",
+    "name_uz": "Shokolad qutisi",
+    "name_ru": "Коробка шоколада",
+    "desc_uz": "Premium shokoladlar to'plami, chiroyli qutida",
+    "desc_ru": "Набор премиальных шоколадных конфет в красивой коробке",
+    "price": 90000,
+    "image": "chocolates.jpg"
+  },
+  {
+    "id": "plush",
+    "emoji": "🧸",
+    "name_uz": "Yumshoq o'yinchoq",
+    "name_ru": "Мягкая игрушка",
+    "desc_uz": "Katta, yumshoq va issiq o'yinchoq — muhabbat belgisi",
+    "desc_ru": "Большая, мягкая и тёплая игрушка — символ любви",
+    "price": 100000,
+    "image": "plush.jpg"
+  },
+  {
+    "id": "flowers_choco",
+    "emoji": "💐",
+    "name_uz": "Gullar + Shokolad",
+    "name_ru": "Цветы + Шоколад",
+    "desc_uz": "Eng sevimli kombinatsiya — gullar va shokolad birga",
+    "desc_ru": "Любимая комбинация — цветы и шоколад вместе",
+    "price": 190000,
+    "image": "flowers_choco.jpg"
+  },
+  {
+    "id": "roses",
+    "emoji": "🌹",
+    "name_uz": "Atirgul qutisi",
+    "name_ru": "Коробка роз",
+    "desc_uz": "Qizil atirgullar — eng romantik sovg'a",
+    "desc_ru": "Красные розы — самый романтичный подарок",
+    "price": 160000,
+    "image": "roses.jpg"
+  },
+  {
+    "id": "premium",
+    "emoji": "💎",
+    "name_uz": "Premium lux to'plam",
+    "name_ru": "Премиум люкс набор",
+    "desc_uz": "Gullar, shokolad, o'yinchoq, atir — hammasi birga! Eng yaxshi tanlov",
+    "desc_ru": "Цветы, шоколад, игрушка, духи — всё вместе! Лучший выбор",
+    "price": 350000,
+    "image": "premium.jpg"
+  }
+]

@@ -4,6 +4,12 @@ const path = require("path");
 const ORDERS_FILE = path.join(__dirname, "../data/orders.json");
 const PACKAGES_FILE = path.join(__dirname, "../data/packages.json");
 
+// Create orders.json if it doesn't exist
+if (!fs.existsSync(ORDERS_FILE)) {
+  fs.mkdirSync(path.dirname(ORDERS_FILE), { recursive: true });
+  fs.writeFileSync(ORDERS_FILE, "[]", "utf-8");
+}
+
 // ─── Read all orders ───────────────────────────────────────────
 function getOrders() {
   const raw = fs.readFileSync(ORDERS_FILE, "utf-8");

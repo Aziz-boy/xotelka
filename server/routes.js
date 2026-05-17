@@ -73,10 +73,12 @@ router.post("/order", async (req, res) => {
       updatedAt: new Date().toISOString(),
     });
 
-    // 🔔 Notify admin group via the bot
+    // 🔔 Notify admin group via the bot (non-fatal if bot not configured yet)
     const bot = req.app.get("bot");
     if (bot) {
-      await notifyAdminNewOrder(bot, order, pkg);
+      notifyAdminNewOrder(bot, order, pkg).catch(err =>
+        console.error("Admin notify failed (order still saved):", err.message)
+      );
     }
 
     res.json({
@@ -102,14 +104,14 @@ router.post("/order/:id/payment-sent", async (req, res) => {
     const bot = req.app.get("bot");
     if (bot) {
       const adminGroupId = process.env.ADMIN_GROUP_ID;
-      await bot.telegram.sendMessage(
+      bot.telegram.sendMessage(
         adminGroupId,
-        `💳 *To'lov cheki yuborildi!*\n\n` +
-        `📦 Buyurtma: \`${order.id.slice(0, 8)}\`\n` +
+        `💳 <b>To'lov cheki yuborildi!</b>\n\n` +
+        `📦 Buyurtma: <code>${order.id.slice(0, 8)}</code>\n` +
         `👤 Xaridor: @${order.telegramUsername || order.telegramUserId}\n\n` +
         `Iltimos, chekni tekshiring va tasdiqlang yoki rad eting 👇`,
         {
-          parse_mode: "Markdown",
+          parse_mode: "HTML",
           reply_markup: {
             inline_keyboard: [
               [
@@ -119,7 +121,7 @@ router.post("/order/:id/payment-sent", async (req, res) => {
             ],
           },
         }
-      );
+      ).catch(err => console.error("Payment notify failed:", err.message));
     }
 
     res.json({ success: true });
@@ -154,24 +156,23 @@ async function notifyAdminNewOrder(bot, order, pkg) {
   const cardName = process.env.PAYMENT_NAME;
 
   const text =
-    `🎁 *YANGI BUYURTMA!*\n\n` +
-    `${pkg.emoji} *${pkg.name_uz}* — ${order.price.toLocaleString()} so'm\n\n` +
-    `👤 *Xaridor:* @${order.telegramUsername || "noma'lum"} (ID: ${order.telegramUserId})\n` +
-    `👧 *Qabul qiluvchi:* ${order.recipientName}\n` +
-    `📞 *Tel:* ${order.recipientPhone}\n` +
-    `📍 *Manzil:* ${order.recipientAddress}\n` +
-    `📅 *Yetkazish:* ${order.deliveryDate || "Ko'rsatilmagan"} ${order.deliveryTime || ""}\n` +
-    `💌 *Xabar:* ${order.message || "—"}\n\n` +
-    `🆔 Buyurtma ID: \`${order.id.slice(0, 8)}\`\n\n` +
+    `🎁 <b>YANGI BUYURTMA!</b>\n\n` +
+    `${pkg.emoji} <b>${pkg.name_uz}</b> — ${order.price.toLocaleString()} so'm\n\n` +
+    `👤 <b>Xaridor:</b> @${order.telegramUsername || "noma'lum"} (ID: ${order.telegramUserId})\n` +
+    `👧 <b>Qabul qiluvchi:</b> ${order.recipientName}\n` +
+    `📞 <b>Tel:</b> ${order.recipientPhone}\n` +
+    `📍 <b>Manzil:</b> ${order.recipientAddress}\n` +
+    `📅 <b>Yetkazish:</b> ${order.deliveryDate || "Ko'rsatilmagan"} ${order.deliveryTime || ""}\n` +
+    `💌 <b>Xabar:</b> ${order.message || "—"}\n\n` +
+    `🆔 Buyurtma ID: <code>${order.id.slice(0, 8)}</code>\n\n` +
     `⏳ To'lov cheki kutilmoqda...`;
 
-  await bot.telegram.sendMessage(adminGroupId, text, { parse_mode: "Markdown" });
+  await bot.telegram.sendMessage(adminGroupId, text, { parse_mode: "HTML" });
 
-  // Also send payment instructions reminder to admin
   await bot.telegram.sendMessage(
     adminGroupId,
-    `💳 Karta: \`${card}\`\n👤 ${cardName}\n\nXaridor to'lov qilgandan so'ng chek yuboradi.`,
-    { parse_mode: "Markdown" }
+    `💳 Karta: <code>${card}</code>\n👤 ${cardName}\n\nXaridor to'lov qilgandan so'ng chek yuboradi.`,
+    { parse_mode: "HTML" }
   );
 }
 

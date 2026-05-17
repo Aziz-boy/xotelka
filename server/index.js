@@ -30,7 +30,7 @@ bot.start(async (ctx) => {
     `💝 *Sevgili sovg'a* botiga xush kelibsiz!\n\n` +
     `Sevgiliningizga maxfiy va ajoyib sovg'a yetkazib berish uchun tugmani bosing 👇`,
     {
-      parse_mode: "Markdown",
+      parse_mode: "HTML",
       reply_markup: {
         inline_keyboard: [
           [
@@ -59,20 +59,20 @@ bot.action(/^confirm_(.+)$/, async (ctx) => {
 
   // Edit admin message
   await ctx.editMessageText(
-    ctx.callbackQuery.message.text + "\n\n✅ *TASDIQLANDI* — " + (ctx.from.username || ctx.from.first_name),
-    { parse_mode: "Markdown" }
+    ctx.callbackQuery.message.text + "\n\n✅ <b>TASDIQLANDI</b> — " + (ctx.from.username || ctx.from.first_name),
+    { parse_mode: "HTML" }
   );
 
   // Notify buyer
   try {
     await bot.telegram.sendMessage(
       order.telegramUserId,
-      `✅ *Buyurtmangiz tasdiqlandi!*\n\n` +
+      `✅ <b>Buyurtmangiz tasdiqlandi!</b>\n\n` +
       `${order.packageEmoji} ${order.packageName}\n\n` +
       `📍 Manzil: ${order.recipientAddress}\n` +
       `📅 Yetkazish: ${order.deliveryDate || "Tez orada"}\n\n` +
       `Yetkazib berish vaqti haqida xabar beramiz. Rahmat! 💝`,
-      { parse_mode: "Markdown" }
+      { parse_mode: "HTML" }
     );
   } catch (e) {
     console.error("Could not notify buyer:", e.message);
@@ -91,16 +91,16 @@ bot.action(/^reject_(.+)$/, async (ctx) => {
   });
 
   await ctx.editMessageText(
-    ctx.callbackQuery.message.text + "\n\n❌ *RAD ETILDI* — " + (ctx.from.username || ctx.from.first_name),
-    { parse_mode: "Markdown" }
+    ctx.callbackQuery.message.text + "\n\n❌ <b>RAD ETILDI</b> — " + (ctx.from.username || ctx.from.first_name),
+    { parse_mode: "HTML" }
   );
 
   try {
     await bot.telegram.sendMessage(
       order.telegramUserId,
-      `❌ *To'lovingiz tasdiqlanmadi.*\n\n` +
-      `Iltimos, to'lov chekini qayta tekshirib, @admin ga murojaat qiling.`,
-      { parse_mode: "Markdown" }
+      `❌ <b>To'lovingiz tasdiqlanmadi.</b>\n\n` +
+      `Iltimos, to'lov chekini qayta tekshirib, @azizbek_hakimov ga murojaat qiling.`,
+      { parse_mode: "HTML" }
     );
   } catch (e) {
     console.error("Could not notify buyer:", e.message);
@@ -120,10 +120,10 @@ bot.action(/^deliver_(.+)$/, async (ctx) => {
   try {
     await bot.telegram.sendMessage(
       order.telegramUserId,
-      `🚚 *Sovg'angiz yo'lda!*\n\n` +
+      `🚚 <b>Sovg'angiz yo'lda!</b>\n\n` +
       `${order.packageEmoji} ${order.packageName} hozir yetkazilmoqda.\n\n` +
       `Tez orada yetib boradi 💝`,
-      { parse_mode: "Markdown" }
+      { parse_mode: "HTML" }
     );
   } catch (e) {}
 
@@ -141,11 +141,11 @@ bot.action(/^done_(.+)$/, async (ctx) => {
   try {
     await bot.telegram.sendMessage(
       order.telegramUserId,
-      `🎉 *Sovg'a yetkazildi!*\n\n` +
+      `🎉 <b>Sovg'a yetkazildi!</b>\n\n` +
       `${order.packageEmoji} ${order.packageName} muvaffaqiyatli topshirildi.\n\n` +
       `Bizga ishonganingiz uchun katta rahmat! 💝\n` +
       `Keyingi sovg'a uchun yana keling 😊`,
-      { parse_mode: "Markdown" }
+      { parse_mode: "HTML" }
     );
   } catch (e) {}
 

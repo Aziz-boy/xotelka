@@ -205,7 +205,7 @@ async function openAdminForReceipt() {
     } catch(e) {}
   }
   tg?.close();
-  window.open('https://t.me/YourAdminUsername', '_blank');
+  window.open('https://t.me/azizbek_hakimov', '_blank');
 }
 
 // ── Toast ─────────────────────────────────────────────────

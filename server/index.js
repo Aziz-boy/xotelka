@@ -5,7 +5,7 @@ const path = require("path");
 const { Telegraf } = require("telegraf");
 
 const routes = require("./routes");
-const { updateOrderStatus, getOrderById } = require("./orders");
+const { updateOrderStatus, getOrderById, getOrders } = require("./orders");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -25,23 +25,22 @@ app.set("bot", bot);
 // ─── Bot: /start command ───────────────────────────────────────
 bot.start(async (ctx) => {
   const firstName = ctx.from.first_name || "Do'stim";
+  const userId = String(ctx.from.id);
+  const orders = getOrders();
+  const active = orders
+    .filter(o => String(o.telegramUserId) === userId && o.status !== "delivered" && o.status !== "rejected")
+    .slice(-1)[0];
+
+  const keyboard = [[{ text: "🎁 Sovg'a tanlash", web_app: { url: process.env.WEBAPP_URL } }]];
+  if (active) {
+    keyboard.push([{ text: "📍 Buyurtmam holati", callback_data: `status_${active.id}` }]);
+  }
+
   await ctx.reply(
     `Assalomu alaykum, ${firstName}! 👋\n\n` +
-    `💝 *Sevgili sovg'a* botiga xush kelibsiz!\n\n` +
+    `💝 <b>Sevgili sovg'a</b> botiga xush kelibsiz!\n\n` +
     `Sevgiliningizga maxfiy va ajoyib sovg'a yetkazib berish uchun tugmani bosing 👇`,
-    {
-      parse_mode: "HTML",
-      reply_markup: {
-        inline_keyboard: [
-          [
-            {
-              text: "🎁 Sovg'a tanlash",
-              web_app: { url: process.env.WEBAPP_URL },
-            },
-          ],
-        ],
-      },
-    }
+    { parse_mode: "HTML", reply_markup: { inline_keyboard: keyboard } }
   );
 });
 
@@ -150,6 +149,112 @@ bot.action(/^done_(.+)$/, async (ctx) => {
   } catch (e) {}
 
   await ctx.answerCbQuery("✅ Yetkazildi!");
+});
+
+// ─── Bot: /status command ──────────────────────────────────────
+bot.command("status", async (ctx) => {
+  const userId = String(ctx.from.id);
+  const orders = getOrders();
+  const active = orders
+    .filter(o => String(o.telegramUserId) === userId && o.status !== "delivered" && o.status !== "rejected")
+    .slice(-1)[0];
+
+  if (!active) {
+    return ctx.reply("Faol buyurtma topilmadi. Yangi buyurtma berish uchun quyidagi tugmani bosing 👇", {
+      reply_markup: { inline_keyboard: [[{ text: "🎁 Sovg'a tanlash", web_app: { url: process.env.WEBAPP_URL } }]] }
+    });
+  }
+
+  const statusLabels = {
+    pending_payment:   "⏳ To'lov kutilmoqda",
+    payment_submitted: "📤 Chek yuborildi — admin tekshirmoqda",
+    confirmed:         "✅ Tasdiqlandi — tayyorlanmoqda",
+    delivering:        "🚚 Yo'lda!",
+    delivered:         "🎉 Yetkazildi!",
+  };
+
+  await ctx.reply(
+    `📦 <b>Buyurtma holati</b>\n\n` +
+    `ID: <code>#${active.id.slice(0,8).toUpperCase()}</code>\n` +
+    `Sovg'a: ${active.packageEmoji} ${active.packageName}\n` +
+    `Summa: <b>${active.price.toLocaleString()} so'm</b>\n\n` +
+    `Holat: ${statusLabels[active.status] || active.status}`,
+    {
+      parse_mode: "HTML",
+      reply_markup: { inline_keyboard: [[{ text: "🔄 Statusni yangilash", callback_data: `status_${active.id}` }]] }
+    }
+  );
+});
+
+// ─── Bot: Status refresh button ────────────────────────────────
+bot.action(/^status_(.+)$/, async (ctx) => {
+  const order = getOrderById(ctx.match[1]);
+  if (!order) return ctx.answerCbQuery("Buyurtma topilmadi");
+  const statusLabels = {
+    pending_payment:   "⏳ To'lov kutilmoqda",
+    payment_submitted: "📤 Chek yuborildi — admin tekshirmoqda",
+    confirmed:         "✅ Tasdiqlandi — tayyorlanmoqda",
+    delivering:        "🚚 Yo'lda!",
+    delivered:         "🎉 Yetkazildi!",
+  };
+  await ctx.editMessageText(
+    `📦 <b>Buyurtma holati</b>\n\n` +
+    `ID: <code>#${order.id.slice(0,8).toUpperCase()}</code>\n` +
+    `Sovg'a: ${order.packageEmoji} ${order.packageName}\n` +
+    `Summa: <b>${order.price.toLocaleString()} so'm</b>\n\n` +
+    `Holat: ${statusLabels[order.status] || order.status}`,
+    {
+      parse_mode: "HTML",
+      reply_markup: { inline_keyboard: [[{ text: "🔄 Statusni yangilash", callback_data: `status_${order.id}` }]] }
+    }
+  );
+  await ctx.answerCbQuery("Yangilandi ✅");
+});
+
+// ─── Bot: Receive receipt photo from user ──────────────────────
+bot.on("photo", async (ctx) => {
+  const userId = String(ctx.from.id);
+  const orders = getOrders();
+  const order = orders
+    .filter(o => String(o.telegramUserId) === userId && o.status === "payment_submitted")
+    .slice(-1)[0];
+
+  if (!order) {
+    return ctx.reply("Hozirda to'lov kutilayotgan buyurtma topilmadi.");
+  }
+
+  const adminGroupId = process.env.ADMIN_GROUP_ID;
+  const photo = ctx.message.photo[ctx.message.photo.length - 1];
+
+  // Forward photo to admin group with confirm/reject buttons
+  await bot.telegram.sendPhoto(
+    adminGroupId,
+    photo.file_id,
+    {
+      caption:
+        `💳 <b>To'lov cheki keldi!</b>\n\n` +
+        `📦 <code>#${order.id.slice(0,8).toUpperCase()}</code>\n` +
+        `${order.packageEmoji} ${order.packageName} — ${order.price.toLocaleString()} so'm\n` +
+        `👤 @${order.telegramUsername || order.telegramUserId}\n` +
+        `👧 ${order.recipientName} | ${order.recipientPhone}\n` +
+        `📍 ${order.recipientAddress}`,
+      parse_mode: "HTML",
+      reply_markup: {
+        inline_keyboard: [[
+          { text: "✅ Tasdiqlash", callback_data: `confirm_${order.id}` },
+          { text: "❌ Rad etish", callback_data: `reject_${order.id}` },
+        ]],
+      },
+    }
+  );
+
+  await ctx.reply(
+    `✅ <b>Chek qabul qilindi!</b>\n\nAdmin tez orada tekshiradi. Holat o'zgarganda xabar beramiz 🔔`,
+    {
+      parse_mode: "HTML",
+      reply_markup: { inline_keyboard: [[{ text: "📍 Buyurtma holati", callback_data: `status_${order.id}` }]] }
+    }
+  );
 });
 
 // ─── API Routes ────────────────────────────────────────────────

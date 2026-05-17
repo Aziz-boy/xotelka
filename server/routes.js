@@ -103,25 +103,15 @@ router.post("/order/:id/payment-sent", async (req, res) => {
     // Re-notify admin group that payment receipt is coming
     const bot = req.app.get("bot");
     if (bot) {
-      const adminGroupId = process.env.ADMIN_GROUP_ID;
+      // Message the USER to send receipt photo directly to the bot
       bot.telegram.sendMessage(
-        adminGroupId,
-        `💳 <b>To'lov cheki yuborildi!</b>\n\n` +
-        `📦 Buyurtma: <code>${order.id.slice(0, 8)}</code>\n` +
-        `👤 Xaridor: @${order.telegramUsername || order.telegramUserId}\n\n` +
-        `Iltimos, chekni tekshiring va tasdiqlang yoki rad eting 👇`,
-        {
-          parse_mode: "HTML",
-          reply_markup: {
-            inline_keyboard: [
-              [
-                { text: "✅ Tasdiqlash", callback_data: `confirm_${order.id}` },
-                { text: "❌ Rad etish", callback_data: `reject_${order.id}` },
-              ],
-            ],
-          },
-        }
-      ).catch(err => console.error("Payment notify failed:", err.message));
+        order.telegramUserId,
+        `📸 <b>To'lov chekini yuboring!</b>\n\n` +
+        `Iltimos, to'lov chekini <b>rasm (photo)</b> sifatida shu botga yuboring.\n\n` +
+        `Buyurtma: <code>#${order.id.slice(0, 8).toUpperCase()}</code>\n` +
+        `Summa: <b>${order.price.toLocaleString()} so'm</b>`,
+        { parse_mode: "HTML" }
+      ).catch(err => console.error("Could not message user:", err.message));
     }
 
     res.json({ success: true });

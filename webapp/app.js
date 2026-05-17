@@ -176,6 +176,7 @@ async function placeOrder() {
     if (!data.success) throw new Error(data.error);
 
     currentOrder = data;
+    localStorage.setItem('lastOrder', JSON.stringify(data));
 
     document.getElementById('final-order-id').innerHTML = `
       <div class="summary-row">
@@ -204,8 +205,8 @@ async function openAdminForReceipt() {
       await fetch(`/api/order/${currentOrder.orderId}/payment-sent`, { method: 'POST' });
     } catch(e) {}
   }
+  // Bot will now message the user asking for the receipt photo
   tg?.close();
-  window.open('https://t.me/azizbek_hakimov', '_blank');
 }
 
 // ── Toast ─────────────────────────────────────────────────
@@ -325,3 +326,25 @@ function formatTime(iso) {
 loadPackages();
 loadConfig();
 document.getElementById('deliveryDate').min = new Date().toISOString().split('T')[0];
+
+// If user already placed an order before, offer to resume tracking
+const saved = localStorage.getItem('lastOrder');
+if (saved) {
+  try {
+    currentOrder = JSON.parse(saved);
+    // Show a resume button at the top
+    const bar = document.createElement('div');
+    bar.style.cssText = 'background:#fffbf4;border:1px solid #e8d5b0;border-radius:12px;padding:12px 16px;margin:12px 20px 0;display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px;';
+    bar.innerHTML = `
+      <span style="color:#8a7f78">📦 Oldingi buyurtma: <b style="color:#b8965a">#${currentOrder.orderId.slice(0,8).toUpperCase()}</b></span>
+      <button onclick="resumeTracking()" style="background:#b8965a;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">Statusni ko'rish</button>
+    `;
+    document.querySelector('.lang-toggle').after(bar);
+  } catch(e) { localStorage.removeItem('lastOrder'); }
+}
+
+function resumeTracking() {
+  goToScreen(4);
+  renderTrackingShell();
+  startTracking();
+}

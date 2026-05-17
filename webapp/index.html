@@ -759,6 +759,10 @@
 
   // ── Screens ───────────────────────────────────────────────
   function goToScreen(n) {
+    if (n !== 4 && trackingInterval) {
+      clearInterval(trackingInterval);
+      trackingInterval = null;
+    }
     document.querySelectorAll('.screen').forEach((s, i) => {
       s.classList.toggle('active', i === n);
     });
@@ -1054,16 +1058,6 @@
       const d = new Date(iso);
       return d.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
     } catch { return ''; }
-  }
-
-  // Stop polling when user leaves tracking screen
-  const origGoToScreen = goToScreen;
-  function goToScreen(n) {
-    if (n !== 4 && trackingInterval) {
-      clearInterval(trackingInterval);
-      trackingInterval = null;
-    }
-    origGoToScreen(n);
   }
 
   // ── Init ──────────────────────────────────────────────────

@@ -1,13 +1,13 @@
 require("dotenv").config();
 const express = require("express");
-const cors = require("cors");
-const path = require("path");
+const cors    = require("cors");
+const path    = require("path");
 const { Telegraf } = require("telegraf");
 
 const routes = require("./routes");
 const { updateOrderStatus, getOrderById, getOrders } = require("./orders");
 
-const app = express();
+const app  = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
@@ -18,20 +18,22 @@ app.use(express.static(path.join(__dirname, "../webapp")));
 const bot = new Telegraf(process.env.BOT_TOKEN);
 app.set("bot", bot);
 
+const ADMIN_GROUP_ID = process.env.ADMIN_GROUP_ID;
+
 const STATUS_LABELS = {
   pending_payment:   "⏳ To'lov kutilmoqda",
-  payment_submitted: "📤 Chek yuborildi — admin tekshirmoqda",
+  payment_submitted: "📤 Chek yuborildi — tekshirmoqda",
   confirmed:         "✅ Tasdiqlandi — tayyorlanmoqda",
   delivering:        "🚚 Yo'lda!",
   delivered:         "🎉 Yetkazildi!",
 };
 
-// ─── Bot: /start ───────────────────────────────────────────────
+// ─── /start ───────────────────────────────────────────────────
 bot.start(async (ctx) => {
   const firstName = ctx.from.first_name || "Do'stim";
-  const userId = String(ctx.from.id);
-  const orders = await getOrders();
-  const active = orders
+  const userId    = String(ctx.from.id);
+  const orders    = await getOrders();
+  const active    = orders
     .filter(o => String(o.telegramUserId) === userId && o.status !== "delivered" && o.status !== "rejected")
     .slice(-1)[0];
 
@@ -40,13 +42,13 @@ bot.start(async (ctx) => {
 
   await ctx.reply(
     `Assalomu alaykum, ${firstName}! 👋\n\n` +
-    `💝 <b>Sevgili sovg'a</b> botiga xush kelibsiz!\n\n` +
+    `💝 <b>Noir Box</b> botiga xush kelibsiz!\n\n` +
     `Sovg'a buyurtma qilish uchun tugmani bosing 👇`,
     { parse_mode: "HTML", reply_markup: { inline_keyboard: keyboard } }
   );
 });
 
-// ─── Bot: /status command ──────────────────────────────────────
+// ─── /status ──────────────────────────────────────────────────
 bot.command("status", async (ctx) => {
   const userId = String(ctx.from.id);
   const orders = await getOrders();
@@ -55,7 +57,7 @@ bot.command("status", async (ctx) => {
     .slice(-1)[0];
 
   if (!active) {
-    return ctx.reply("Faol buyurtma topilmadi. Yangi buyurtma berish uchun 👇", {
+    return ctx.reply("Faol buyurtma topilmadi.", {
       reply_markup: { inline_keyboard: [[{ text: "🎁 Sovg'a tanlash", web_app: { url: process.env.WEBAPP_URL } }]] }
     });
   }
@@ -73,7 +75,25 @@ bot.command("status", async (ctx) => {
   );
 });
 
-// ─── Bot: Status refresh button ────────────────────────────────
+// ─── /orders (admin) ──────────────────────────────────────────
+bot.command("orders", async (ctx) => {
+  if (String(ctx.chat.id) !== String(ADMIN_GROUP_ID) &&
+      String(ctx.from.id) !== String(ADMIN_GROUP_ID)) {
+    // allow in private chat too for admins — just show last 10
+  }
+  const all    = await getOrders();
+  const recent = [...all].reverse().slice(0, 10);
+
+  if (!recent.length) return ctx.reply("Hali buyurtma yo'q.");
+
+  const lines = recent.map(o =>
+    `• <code>#${o.id.slice(0,8).toUpperCase()}</code> — ${o.packageName} | ${STATUS_LABELS[o.status] || o.status}`
+  ).join("\n");
+
+  await ctx.reply(`📋 <b>Oxirgi buyurtmalar:</b>\n\n${lines}`, { parse_mode: "HTML" });
+});
+
+// ─── Status refresh button ─────────────────────────────────────
 bot.action(/^status_(.+)$/, async (ctx) => {
   const order = await getOrderById(ctx.match[1]);
   if (!order) return ctx.answerCbQuery("Buyurtma topilmadi");
@@ -88,11 +108,11 @@ bot.action(/^status_(.+)$/, async (ctx) => {
       parse_mode: "HTML",
       reply_markup: { inline_keyboard: [[{ text: "🔄 Yangilash", callback_data: `status_${order.id}` }]] }
     }
-  );
+  ).catch(() => {});
   await ctx.answerCbQuery("Yangilandi ✅");
 });
 
-// ─── Bot: Confirm order ────────────────────────────────────────
+// ─── Confirm order ─────────────────────────────────────────────
 bot.action(/^confirm_(.+)$/, async (ctx) => {
   await ctx.answerCbQuery("✅ Tasdiqlandi!").catch(() => {});
 
@@ -101,17 +121,19 @@ bot.action(/^confirm_(.+)$/, async (ctx) => {
     if (!order) return;
 
     await updateOrderStatus(order.id, "confirmed", {
-      confirmedBy: ctx.from.username || ctx.from.id,
+      confirmedBy: ctx.from.username || String(ctx.from.id),
       confirmedAt: new Date().toISOString(),
     });
 
+    // Update the receipt photo caption
     const byAdmin = "@" + (ctx.from.username || ctx.from.first_name);
     const oldCaption = ctx.callbackQuery.message?.caption || "";
     await ctx.editMessageCaption(
       oldCaption + "\n\n✅ TASDIQLANDI — " + byAdmin,
       { parse_mode: "HTML" }
-    ).catch(e => console.error("editMessageCaption (confirm) failed:", e.message));
+    ).catch(() => {});
 
+    // Notify buyer
     if (order.telegramUserId !== "unknown") {
       bot.telegram.sendMessage(
         order.telegramUserId,
@@ -124,14 +146,35 @@ bot.action(/^confirm_(.+)$/, async (ctx) => {
           parse_mode: "HTML",
           reply_markup: { inline_keyboard: [[{ text: "📍 Buyurtma holati", callback_data: `status_${order.id}` }]] }
         }
-      ).catch(e => console.error("Buyer notify error:", e.message));
+      ).catch(() => {});
     }
+
+    // Send delivery management to admin
+    await bot.telegram.sendMessage(
+      ADMIN_GROUP_ID,
+      `🚀 <b>#${order.id.slice(0,8).toUpperCase()}</b> yetkazishga tayyor!\n\n` +
+      `👧 ${order.recipientName}\n` +
+      `📞 ${order.recipientPhone}\n` +
+      `📍 ${order.recipientAddress}\n` +
+      `📅 ${order.deliveryDate || "Kelishilgan vaqtda"}\n` +
+      `💌 ${order.message || "—"}\n\n` +
+      `Yetkazish holatini yangilang:`,
+      {
+        parse_mode: "HTML",
+        reply_markup: {
+          inline_keyboard: [[
+            { text: "🚚 Yo'lga chiqdi",  callback_data: `deliver_${order.id}` },
+            { text: "✅ Yetkazildi",      callback_data: `done_${order.id}` },
+          ]]
+        }
+      }
+    );
   } catch (e) {
-    console.error("confirm_ handler error:", e);
+    console.error("confirm_ error:", e);
   }
 });
 
-// ─── Bot: Reject order ─────────────────────────────────────────
+// ─── Reject order ──────────────────────────────────────────────
 bot.action(/^reject_(.+)$/, async (ctx) => {
   await ctx.answerCbQuery("❌ Rad etildi").catch(() => {});
 
@@ -139,72 +182,92 @@ bot.action(/^reject_(.+)$/, async (ctx) => {
     const order = await getOrderById(ctx.match[1]);
     if (!order) return;
 
-    await updateOrderStatus(order.id, "rejected", { rejectedBy: ctx.from.username || ctx.from.id });
+    await updateOrderStatus(order.id, "rejected", {
+      rejectedBy: ctx.from.username || String(ctx.from.id),
+    });
 
     const byAdmin = "@" + (ctx.from.username || ctx.from.first_name);
     const oldCaption = ctx.callbackQuery.message?.caption || "";
     await ctx.editMessageCaption(
       oldCaption + "\n\n❌ RAD ETILDI — " + byAdmin,
       { parse_mode: "HTML" }
-    ).catch(e => console.error("editMessageCaption (reject) failed:", e.message));
+    ).catch(() => {});
 
     if (order.telegramUserId !== "unknown") {
       bot.telegram.sendMessage(
         order.telegramUserId,
-        `❌ <b>To'lovingiz tasdiqlanmadi.</b>\n\n` +
-        `Iltimos, to'lov chekini qayta tekshirib, @azizbek_hakimov ga murojaat qiling.`,
+        `❌ <b>To'lovingiz tasdiqlanmadi.</b>\n\nIltimos, to'lov chekini qayta tekshirib, aloqaga chiqing.`,
         { parse_mode: "HTML" }
-      ).catch(e => console.error("Buyer notify error:", e.message));
+      ).catch(() => {});
     }
   } catch (e) {
-    console.error("reject_ handler error:", e);
+    console.error("reject_ error:", e);
   }
 });
 
-// ─── Bot: Mark as delivering ───────────────────────────────────
+// ─── Mark as delivering ────────────────────────────────────────
 bot.action(/^deliver_(.+)$/, async (ctx) => {
-  const order = await getOrderById(ctx.match[1]);
-  if (!order) return ctx.answerCbQuery("Buyurtma topilmadi!");
+  await ctx.answerCbQuery("🚚 Yetkazish boshlandi").catch(() => {});
 
-  await updateOrderStatus(order.id, "delivering");
+  try {
+    const order = await getOrderById(ctx.match[1]);
+    if (!order) return;
 
-  if (order.telegramUserId !== "unknown") {
-    bot.telegram.sendMessage(
-      order.telegramUserId,
-      `🚚 <b>Sovg'angiz yo'lda!</b>\n\n${order.packageEmoji} ${order.packageName} yetkazilmoqda.\n\nTez orada yetib boradi 💝`,
-      {
-        parse_mode: "HTML",
-        reply_markup: { inline_keyboard: [[{ text: "📍 Buyurtma holati", callback_data: `status_${order.id}` }]] }
-      }
-    ).catch(() => {});
+    await updateOrderStatus(order.id, "delivering");
+
+    // Replace buttons with just "done"
+    await ctx.editMessageReplyMarkup({
+      inline_keyboard: [[{ text: "✅ Yetkazildi", callback_data: `done_${order.id}` }]]
+    }).catch(() => {});
+
+    if (order.telegramUserId !== "unknown") {
+      bot.telegram.sendMessage(
+        order.telegramUserId,
+        `🚚 <b>Sovg'angiz yo'lda!</b>\n\n${order.packageEmoji} ${order.packageName} yetkazilmoqda.\nTez orada yetib boradi 💝`,
+        {
+          parse_mode: "HTML",
+          reply_markup: { inline_keyboard: [[{ text: "📍 Buyurtma holati", callback_data: `status_${order.id}` }]] }
+        }
+      ).catch(() => {});
+    }
+  } catch (e) {
+    console.error("deliver_ error:", e);
   }
-
-  await ctx.answerCbQuery("🚚 Yetkazish boshlandi");
 });
 
-// ─── Bot: Mark as delivered ────────────────────────────────────
+// ─── Mark as delivered ─────────────────────────────────────────
 bot.action(/^done_(.+)$/, async (ctx) => {
-  const order = await getOrderById(ctx.match[1]);
-  if (!order) return ctx.answerCbQuery("Buyurtma topilmadi!");
+  await ctx.answerCbQuery("🎉 Yetkazildi!").catch(() => {});
 
-  await updateOrderStatus(order.id, "delivered", { deliveredAt: new Date().toISOString() });
+  try {
+    const order = await getOrderById(ctx.match[1]);
+    if (!order) return;
 
-  if (order.telegramUserId !== "unknown") {
-    bot.telegram.sendMessage(
-      order.telegramUserId,
-      `🎉 <b>Sovg'a yetkazildi!</b>\n\n${order.packageEmoji} ${order.packageName} muvaffaqiyatli topshirildi.\n\nRahmat! 💝`,
-      { parse_mode: "HTML" }
-    ).catch(() => {});
+    await updateOrderStatus(order.id, "delivered", { deliveredAt: new Date().toISOString() });
+
+    // Remove buttons from delivery management message
+    await ctx.editMessageReplyMarkup({ inline_keyboard: [] }).catch(() => {});
+
+    if (order.telegramUserId !== "unknown") {
+      bot.telegram.sendMessage(
+        order.telegramUserId,
+        `🎉 <b>Sovg'a yetkazildi!</b>\n\n${order.packageEmoji} ${order.packageName} muvaffaqiyatli topshirildi.\n\nRahmat! 💝`,
+        {
+          parse_mode: "HTML",
+          reply_markup: { inline_keyboard: [[{ text: "🎁 Yangi buyurtma", web_app: { url: process.env.WEBAPP_URL } }]] }
+        }
+      ).catch(() => {});
+    }
+  } catch (e) {
+    console.error("done_ error:", e);
   }
-
-  await ctx.answerCbQuery("✅ Yetkazildi!");
 });
 
-// ─── Bot: Receive receipt photo ────────────────────────────────
+// ─── Receipt photo ─────────────────────────────────────────────
 bot.on("photo", async (ctx) => {
   const userId = String(ctx.from.id);
   const orders = await getOrders();
-  const order = orders
+  const order  = orders
     .filter(o => String(o.telegramUserId) === userId && o.status === "payment_submitted")
     .slice(-1)[0];
 
@@ -217,7 +280,7 @@ bot.on("photo", async (ctx) => {
 
   const photo = ctx.message.photo[ctx.message.photo.length - 1];
   await bot.telegram.sendPhoto(
-    process.env.ADMIN_GROUP_ID,
+    ADMIN_GROUP_ID,
     photo.file_id,
     {
       caption:
@@ -231,7 +294,7 @@ bot.on("photo", async (ctx) => {
       reply_markup: {
         inline_keyboard: [[
           { text: "✅ Tasdiqlash", callback_data: `confirm_${order.id}` },
-          { text: "❌ Rad etish", callback_data: `reject_${order.id}` },
+          { text: "❌ Rad etish",  callback_data: `reject_${order.id}` },
         ]],
       },
     }
@@ -246,6 +309,37 @@ bot.on("photo", async (ctx) => {
   );
 });
 
+// ─── Any other message ─────────────────────────────────────────
+bot.on("message", async (ctx) => {
+  const userId = String(ctx.from.id);
+  const orders = await getOrders();
+  const active = orders
+    .filter(o => String(o.telegramUserId) === userId && o.status !== "delivered" && o.status !== "rejected")
+    .slice(-1)[0];
+
+  if (active?.status === "pending_payment") {
+    return ctx.reply(
+      `💳 To'lov qiling va chekni <b>rasm</b> sifatida yuboring.\n\nKarta: <code>${process.env.PAYMENT_CARD}</code>\nEgasi: ${process.env.PAYMENT_NAME}`,
+      { parse_mode: "HTML" }
+    );
+  }
+
+  if (active) {
+    return ctx.reply(
+      `📦 Buyurtmangiz holati: ${STATUS_LABELS[active.status] || active.status}\n\nYangilash uchun tugmani bosing:`,
+      {
+        parse_mode: "HTML",
+        reply_markup: { inline_keyboard: [[{ text: "📍 Holat", callback_data: `status_${active.id}` }]] }
+      }
+    );
+  }
+
+  await ctx.reply(
+    `Sovg'a buyurtma qilish uchun 👇`,
+    { reply_markup: { inline_keyboard: [[{ text: "🎁 Sovg'a tanlash", web_app: { url: process.env.WEBAPP_URL } }]] } }
+  );
+});
+
 // ─── API Routes ────────────────────────────────────────────────
 app.use("/api", routes);
 
@@ -253,11 +347,22 @@ app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "../webapp/index.html"));
 });
 
-app.listen(PORT, () => {
-  console.log(`✅ Server running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
 
-bot.launch().then(() => console.log("🤖 Bot started!"));
+bot.launch()
+  .then(() => console.log("🤖 Bot started!"))
+  .catch(err => {
+    console.error("❌ Bot launch failed:", err.message);
+    process.exit(1);
+  });
 
-process.once("SIGINT", () => bot.stop("SIGINT"));
+// Keep Render.com free tier alive
+if (process.env.WEBAPP_URL) {
+  setInterval(() => {
+    const mod = process.env.WEBAPP_URL.startsWith("https") ? require("https") : require("http");
+    mod.get(process.env.WEBAPP_URL, () => {}).on("error", () => {});
+  }, 14 * 60 * 1000);
+}
+
+process.once("SIGINT",  () => bot.stop("SIGINT"));
 process.once("SIGTERM", () => bot.stop("SIGTERM"));

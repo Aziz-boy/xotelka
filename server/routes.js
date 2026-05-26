@@ -85,6 +85,24 @@ router.post("/order", async (req, res) => {
       notifyAdminNewOrder(bot, order).catch(err =>
         console.error("Admin notify failed:", err.message)
       );
+
+      // Notify buyer with payment instructions
+      if (order.telegramUserId !== "unknown") {
+        bot.telegram.sendMessage(
+          order.telegramUserId,
+          `🎁 <b>Buyurtmangiz qabul qilindi!</b>\n\n` +
+          `🆔 <code>#${order.id.slice(0,8).toUpperCase()}</code>\n` +
+          `${order.packageEmoji} ${order.packageName}\n` +
+          `💰 ${order.price.toLocaleString()} so'm\n\n` +
+          `To'lov qiling va chekni shu botga <b>rasm sifatida</b> yuboring 📸\n\n` +
+          `💳 Karta: <code>${process.env.PAYMENT_CARD}</code>\n` +
+          `👤 ${process.env.PAYMENT_NAME}`,
+          {
+            parse_mode: "HTML",
+            reply_markup: { inline_keyboard: [[{ text: "📍 Buyurtma holati", callback_data: `status_${order.id}` }]] }
+          }
+        ).catch(err => console.error("Buyer notify failed:", err.message));
+      }
     }
 
     res.json({

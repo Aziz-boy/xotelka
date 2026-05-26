@@ -1,56 +1,48 @@
 const fs = require("fs");
 const path = require("path");
+const { MongoClient } = require("mongodb");
 
-const ORDERS_FILE = path.join(__dirname, "../data/orders.json");
 const PACKAGES_FILE = path.join(__dirname, "../data/packages.json");
 
-// Create orders.json if it doesn't exist
-if (!fs.existsSync(ORDERS_FILE)) {
-  fs.mkdirSync(path.dirname(ORDERS_FILE), { recursive: true });
-  fs.writeFileSync(ORDERS_FILE, "[]", "utf-8");
+// ─── MongoDB connection ────────────────────────────────────────
+let _col = null;
+
+async function col() {
+  if (_col) return _col;
+  const client = new MongoClient(process.env.MONGODB_URI);
+  await client.connect();
+  _col = client.db("giftbot").collection("orders");
+  return _col;
 }
 
-// ─── Read all orders ───────────────────────────────────────────
-function getOrders() {
-  const raw = fs.readFileSync(ORDERS_FILE, "utf-8");
-  return JSON.parse(raw);
+// ─── Orders ───────────────────────────────────────────────────
+async function getOrders() {
+  return (await col()).find({}).toArray();
 }
 
-// ─── Save all orders ───────────────────────────────────────────
-function saveOrders(orders) {
-  fs.writeFileSync(ORDERS_FILE, JSON.stringify(orders, null, 2), "utf-8");
-}
-
-// ─── Add a new order ───────────────────────────────────────────
-function addOrder(order) {
-  const orders = getOrders();
-  orders.push(order);
-  saveOrders(orders);
+async function addOrder(order) {
+  await (await col()).insertOne({ ...order, _id: order.id });
   return order;
 }
 
-// ─── Find order by ID ──────────────────────────────────────────
-function getOrderById(id) {
-  return getOrders().find((o) => o.id === id) || null;
+async function getOrderById(id) {
+  return (await col()).findOne({ id }) || null;
 }
 
-// ─── Update order status ───────────────────────────────────────
-function updateOrderStatus(id, status, extra = {}) {
-  const orders = getOrders();
-  const idx = orders.findIndex((o) => o.id === id);
-  if (idx === -1) return null;
-  orders[idx] = { ...orders[idx], status, ...extra, updatedAt: new Date().toISOString() };
-  saveOrders(orders);
-  return orders[idx];
+async function updateOrderStatus(id, status, extra = {}) {
+  const result = await (await col()).findOneAndUpdate(
+    { id },
+    { $set: { status, ...extra, updatedAt: new Date().toISOString() } },
+    { returnDocument: "after" }
+  );
+  return result || null;
 }
 
-// ─── Get all packages ──────────────────────────────────────────
+// ─── Packages (still from file — they don't change) ───────────
 function getPackages() {
-  const raw = fs.readFileSync(PACKAGES_FILE, "utf-8");
-  return JSON.parse(raw);
+  return JSON.parse(fs.readFileSync(PACKAGES_FILE, "utf-8"));
 }
 
-// ─── Get package by ID ─────────────────────────────────────────
 function getPackageById(id) {
   return getPackages().find((p) => p.id === id) || null;
 }

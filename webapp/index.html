@@ -1,262 +1,157 @@
 <!DOCTYPE html>
 <html lang="uz">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-  <title>💝 Sevgili Sovg'a</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>NOIR BOX</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Montserrat:wght@200;300;400;500;600&display=swap" rel="stylesheet">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<!-- Toast -->
+<!-- ══ HEADER ══ -->
+<header class="nb-header">
+  <div class="nb-logo">
+    <svg viewBox="0 0 100 115" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M50 108 L8 70 L20 30 L50 12 L80 30 L92 70 Z" stroke="white" stroke-width="1.8" stroke-linejoin="round" fill="none"/>
+      <line x1="8"  y1="70" x2="92" y2="70"  stroke="white" stroke-width="1.2"/>
+      <line x1="50" y1="12" x2="8"  y2="70"  stroke="white" stroke-width="1.2"/>
+      <line x1="50" y1="12" x2="92" y2="70"  stroke="white" stroke-width="1.2"/>
+      <line x1="50" y1="70" x2="50" y2="108" stroke="white" stroke-width="1.2"/>
+      <line x1="20" y1="30" x2="92" y2="70"  stroke="white" stroke-width="0.9"/>
+      <line x1="80" y1="30" x2="8"  y2="70"  stroke="white" stroke-width="0.9"/>
+      <polygon points="50,14 63,21 68,34 62,47 50,51 38,47 32,34 37,21" fill="none" stroke="white" stroke-width="1.2"/>
+      <polygon points="50,19 61,25 65,34 59,43 50,46 41,43 35,34 39,25" fill="none" stroke="white" stroke-width="1.0"/>
+      <polygon points="50,24 58,29 62,34 57,40 50,42 43,40 38,34 42,29" fill="none" stroke="white" stroke-width="0.8"/>
+      <polygon points="50,29 56,32 58,35 55,39 50,41 45,39 42,35 44,32" fill="none" stroke="white" stroke-width="0.6"/>
+      <circle cx="50" cy="34" r="2.5" fill="none" stroke="white" stroke-width="0.5"/>
+    </svg>
+  </div>
+  <div class="nb-brand">
+    <h1 class="nb-title">NOIR BOX</h1>
+    <p class="nb-tagline">sezdirmasdan sevadiganlar uchun</p>
+  </div>
+</header>
+
+<!-- ══ CATALOG ══ -->
+<main class="nb-catalog">
+  <div class="catalog-label">Kolleksiyalar</div>
+  <div class="boxes-grid" id="boxes-grid"></div>
+</main>
+
+<!-- ══ BOX DETAIL MODAL ══ -->
+<div class="modal-overlay" id="box-modal-overlay" onclick="closeBoxModal()"></div>
+<div class="modal-sheet" id="box-modal" role="dialog">
+  <div class="modal-handle"></div>
+  <button class="modal-close" onclick="closeBoxModal()" aria-label="Yopish">✕</button>
+
+  <div class="modal-scroll">
+    <div class="modal-hero">
+      <div class="modal-hero-img" id="modal-hero-img"></div>
+      <div class="modal-hero-overlay">
+        <div class="modal-badge" id="modal-badge"></div>
+        <h2 class="modal-name" id="modal-name"></h2>
+        <p class="modal-tagline-txt" id="modal-tagline-txt"></p>
+      </div>
+    </div>
+
+    <div class="modal-body">
+      <div class="items-section-title">Qutida nima bor:</div>
+      <div class="modal-items" id="modal-items"></div>
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <div class="modal-price" id="modal-price"></div>
+    <button class="btn-red" id="btn-add-cart" onclick="addToCart()">Korzinaga qo'shish</button>
+  </div>
+</div>
+
+<!-- ══ CHECKOUT MODAL ══ -->
+<div class="modal-overlay" id="checkout-overlay" onclick="closeCheckout()"></div>
+<div class="modal-sheet checkout-sheet" id="checkout-modal" role="dialog">
+  <div class="modal-handle"></div>
+  <div class="checkout-header">
+    <h3 class="checkout-title">Buyurtma berish</h3>
+    <button class="modal-close static" onclick="closeCheckout()">✕</button>
+  </div>
+
+  <div class="checkout-scroll">
+    <div class="checkout-summary" id="checkout-summary"></div>
+
+    <div class="form-section">
+      <div class="form-group">
+        <label class="form-label">Ismingiz</label>
+        <input class="form-input" id="senderName" type="text" placeholder="Jasur">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Qabul qiluvchi ismi</label>
+        <input class="form-input" id="recipientName" type="text" placeholder="Malika">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Telefon raqami</label>
+        <input class="form-input" id="recipientPhone" type="tel" placeholder="+998 90 123 45 67">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Yetkazish manzili</label>
+        <input class="form-input" id="recipientAddress" type="text" placeholder="Ko'cha, uy, kvartira...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Yetkazish sanasi</label>
+        <input class="form-input" id="deliveryDate" type="date">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Maxfiy xabar <span class="optional">(ixtiyoriy)</span></label>
+        <textarea class="form-textarea" id="message" placeholder="Sevgilim, seni juda yaxshi ko'raman..."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button class="btn-red full-width" id="btn-place-order" onclick="placeOrder()">Buyurtma berish</button>
+  </div>
+</div>
+
+<!-- ══ SUCCESS OVERLAY ══ -->
+<div class="success-overlay" id="success-overlay">
+  <div class="success-content">
+    <div class="success-icon">
+      <svg viewBox="0 0 64 64" fill="none">
+        <circle cx="32" cy="32" r="30" stroke="white" stroke-width="1.5"/>
+        <path d="M20 32 L28 40 L44 24" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <h2 class="success-title">Buyurtma qabul qilindi</h2>
+    <p class="success-sub">Tez orada siz bilan bog'lanamiz va yetkazib berish tafsilotlarini tasdiqlashadi.</p>
+    <div class="success-order-id" id="success-order-id"></div>
+    <button class="btn-red" onclick="closeSuccess()" style="margin-top:28px;width:100%;padding:15px">Bosh sahifaga</button>
+  </div>
+</div>
+
+<!-- ══ CART BAR ══ -->
+<div class="cart-bar" id="cart-bar">
+  <div class="cart-info">
+    <div class="cart-icon-wrap" id="cart-icon-wrap">
+      <svg class="cart-icon" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5">
+        <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
+        <line x1="3" y1="6" x2="21" y2="6"/>
+        <path d="M16 10a4 4 0 01-8 0"/>
+      </svg>
+      <span class="cart-count" id="cart-count">0</span>
+    </div>
+    <div class="cart-details">
+      <span class="cart-items-label" id="cart-items-label">0 ta mahsulot</span>
+      <span class="cart-total" id="cart-total">0 so'm</span>
+    </div>
+  </div>
+  <button class="cart-cta" onclick="openCheckout()">Buyurtma berish</button>
+</div>
+
+<!-- ══ TOAST ══ -->
 <div class="toast" id="toast"></div>
-
-<!-- Header -->
-<div class="header">
-  <h1>💝 Sevgili Sovg'a</h1>
-  <p id="header-sub">Sevgiliningizga maxfiy sovg'a</p>
-</div>
-
-<!-- Language toggle -->
-<div class="lang-toggle">
-  <button class="lang-btn active" onclick="setLang('uz')">O'zbek</button>
-  <button class="lang-btn" onclick="setLang('ru')">Русский</button>
-</div>
-
-<!-- Step dots -->
-<div class="steps">
-  <div class="step-dot active" id="dot-0"></div>
-  <div class="step-dot" id="dot-1"></div>
-  <div class="step-dot" id="dot-2"></div>
-  <div class="step-dot" id="dot-3"></div>
-  <div class="step-dot" id="dot-4"></div>
-</div>
-
-<!-- ══ SCREEN 1: Choose package ══ -->
-<div class="screen active" id="screen-0">
-  <p class="section-title" data-uz="🎁 Sovg'ani tanlang" data-ru="🎁 Выберите подарок">🎁 Sovg'ani tanlang</p>
-  <p class="section-sub" data-uz="Sevgiliningizga qaysi sovg'ani yubormoqchisiz?" data-ru="Какой подарок вы хотите отправить любимой?">
-    Sevgiliningizga qaysi sovg'ani yubormoqchisiz?
-  </p>
-  <div class="packages-grid" id="packages-grid"></div>
-  <div class="bottom-bar">
-    <button class="btn-primary" id="btn-next-0" onclick="goToScreen(1)" disabled
-      data-uz="Davom etish →" data-ru="Продолжить →">Davom etish →</button>
-  </div>
-</div>
-
-<!-- ══ SCREEN 2: Recipient info ══ -->
-<div class="screen" id="screen-1">
-  <p class="section-title" data-uz="👧 Qabul qiluvchi ma'lumotlari" data-ru="👧 Данные получателя">
-    👧 Qabul qiluvchi ma'lumotlari
-  </p>
-  <p class="section-sub" data-uz="Sevgiliningiz haqida ma'lumot kiriting. U hech narsa bilmaydi 🤫" data-ru="Введите данные любимой. Она ничего не узнает 🤫">
-    Sevgiliningiz haqida ma'lumot kiriting. U hech narsa bilmaydi 🤫
-  </p>
-
-  <div class="form-group">
-    <label class="form-label" data-uz="Ismi" data-ru="Имя">Ismi</label>
-    <input class="form-input" id="recipientName" type="text" placeholder="Masalan: Malika"
-      data-ph-uz="Masalan: Malika" data-ph-ru="Например: Малика"/>
-  </div>
-  <div class="form-group">
-    <label class="form-label" data-uz="Telefon raqami" data-ru="Номер телефона">Telefon raqami</label>
-    <input class="form-input" id="recipientPhone" type="tel" placeholder="+998 90 123 45 67"/>
-  </div>
-  <div class="form-group">
-    <label class="form-label" data-uz="Manzili (to'liq)" data-ru="Адрес (полный)">Manzili (to'liq)</label>
-    <input class="form-input" id="recipientAddress" type="text"
-      placeholder="Ko'cha, uy, kvartira..."
-      data-ph-uz="Ko'cha, uy, kvartira..." data-ph-ru="Улица, дом, квартира..."/>
-  </div>
-  <div class="form-group">
-    <label class="form-label" data-uz="Yetkazish sanasi" data-ru="Дата доставки">Yetkazish sanasi</label>
-    <input class="form-input" id="deliveryDate" type="date"/>
-  </div>
-  <div class="form-group">
-    <label class="form-label" data-uz="Yetkazish vaqti" data-ru="Время доставки">Yetkazish vaqti</label>
-    <select class="form-select" id="deliveryTime">
-      <option value="">-- tanlang --</option>
-      <option value="09:00-12:00">09:00 – 12:00</option>
-      <option value="12:00-15:00">12:00 – 15:00</option>
-      <option value="15:00-18:00">15:00 – 18:00</option>
-      <option value="18:00-21:00">18:00 – 21:00</option>
-    </select>
-  </div>
-  <div class="form-group">
-    <label class="form-label" data-uz="💌 Xabar (ixtiyoriy)" data-ru="💌 Сообщение (необязательно)">💌 Xabar (ixtiyoriy)</label>
-    <textarea class="form-textarea" id="message"
-      placeholder="Sevgilim, seni juda yaxshi ko'raman..."
-      data-ph-uz="Sevgilim, seni juda yaxshi ko'raman..."
-      data-ph-ru="Любимая, я тебя очень люблю..."></textarea>
-  </div>
-
-  <div class="bottom-bar">
-    <button class="btn-primary" onclick="validateAndNext()" data-uz="Davom etish →" data-ru="Продолжить →">Davom etish →</button>
-    <button class="btn-secondary" onclick="goToScreen(0)" data-uz="← Orqaga" data-ru="← Назад">← Orqaga</button>
-  </div>
-</div>
-
-<!-- ══ SCREEN 3: Summary + Payment ══ -->
-<div class="screen" id="screen-2">
-  <p class="section-title" data-uz="📋 Buyurtma xulosasi" data-ru="📋 Сводка заказа">📋 Buyurtma xulosasi</p>
-
-  <div class="summary-card" id="summary-card"></div>
-
-  <div class="payment-box">
-    <h3 data-uz="💳 To'lov ma'lumotlari" data-ru="💳 Реквизиты для оплаты">💳 To'lov ma'lumotlari</h3>
-    <div class="card-number" id="card-number">•••• •••• •••• ••••</div>
-    <div class="card-holder" id="card-holder">—</div>
-    <button class="copy-btn" onclick="copyCard()" data-uz="📋 Nusxa olish" data-ru="📋 Скопировать">📋 Nusxa olish</button>
-    <div class="amount-due" id="amount-due"></div>
-  </div>
-
-  <p class="section-sub" data-uz="To'lov qilgach, chekni @admin ga yuboring. Biz tasdiqlashimizdan so'ng buyurtmangiz bajariladi." data-ru="После оплаты отправьте чек @admin. После подтверждения ваш заказ будет выполнен.">
-    To'lov qilgach, chekni @admin ga yuboring. Biz tasdiqlashimizdan so'ng buyurtmangiz bajariladi.
-  </p>
-
-  <div class="bottom-bar">
-    <button class="btn-primary" onclick="placeOrder()" id="btn-order"
-      data-uz="✅ Buyurtma berish" data-ru="✅ Оформить заказ">✅ Buyurtma berish</button>
-    <button class="btn-secondary" onclick="goToScreen(1)" data-uz="← Orqaga" data-ru="← Назад">← Orqaga</button>
-  </div>
-</div>
-
-<!-- ══ SCREEN 4: Success ══ -->
-<div class="screen" id="screen-3">
-  <div class="status-icon">🎉</div>
-  <div class="status-title" data-uz="Buyurtma qabul qilindi!" data-ru="Заказ принят!">Buyurtma qabul qilindi!</div>
-  <div class="status-sub" data-uz="Endi to'lov chekingizni yuborish qoldi. Quyidagi tugmani bosing." data-ru="Теперь отправьте чек об оплате. Нажмите кнопку ниже.">
-    Endi to'lov chekingizni yuborish qoldi. Quyidagi tugmani bosing.
-  </div>
-
-  <div class="status-badge">
-    <div class="badge-dot"></div>
-    <span data-uz="Tasdiqlash kutilmoqda..." data-ru="Ожидает подтверждения...">Tasdiqlash kutilmoqda...</span>
-  </div>
-
-  <div class="summary-card" id="final-order-id" style="margin-top:16px;"></div>
-
-  <div class="bottom-bar">
-    <button class="btn-primary" onclick="openAdminForReceipt()" id="btn-send-receipt"
-      data-uz="📤 Chekni yuborish" data-ru="📤 Отправить чек">📤 Chekni yuborish</button>
-    <button class="btn-secondary" onclick="goToTracking()"
-      data-uz="📍 Buyurtmani kuzatish" data-ru="📍 Отслеживать заказ">📍 Buyurtmani kuzatish</button>
-  </div>
-</div>
-
-<!-- ══ SCREEN 5: Live Tracking ══ -->
-<div class="screen" id="screen-4">
-
-  <div class="track-header">
-    <span class="track-pkg-emoji" id="trk-emoji">🎁</span>
-    <div class="track-pkg-name" id="trk-pkg-name"></div>
-    <div class="track-order-id" id="trk-order-id"></div>
-  </div>
-
-  <div class="delivered-card" id="delivered-card">
-    <div class="big-emoji">🎉</div>
-    <h3 data-uz="Yetkazildi!" data-ru="Доставлено!">Yetkazildi!</h3>
-    <p data-uz="Sovg'angiz sevgiliningizga muvaffaqiyatli topshirildi. Rahmat!" data-ru="Ваш подарок успешно доставлен любимой. Спасибо!">
-      Sovg'angiz sevgiliningizga muvaffaqiyatli topshirildi. Rahmat!
-    </p>
-  </div>
-
-  <div class="timeline" id="timeline">
-
-    <div class="tl-item" id="tl-pending_payment">
-      <div class="tl-left">
-        <div class="tl-dot" id="dot-pending_payment">💳</div>
-        <div class="tl-line" id="line-pending_payment"></div>
-      </div>
-      <div class="tl-content">
-        <div class="tl-title" id="title-pending_payment"
-          data-uz="To'lov kutilmoqda" data-ru="Ожидание оплаты">To'lov kutilmoqda</div>
-        <div class="tl-time" id="time-pending_payment"></div>
-        <div class="tl-sub" id="sub-pending_payment"
-          data-uz="Karta raqamiga to'lov qiling va chekni yuboring" data-ru="Оплатите по номеру карты и отправьте чек">
-          Karta raqamiga to'lov qiling va chekni yuboring
-        </div>
-      </div>
-    </div>
-
-    <div class="tl-item" id="tl-payment_submitted">
-      <div class="tl-left">
-        <div class="tl-dot" id="dot-payment_submitted">📤</div>
-        <div class="tl-line" id="line-payment_submitted"></div>
-      </div>
-      <div class="tl-content">
-        <div class="tl-title" id="title-payment_submitted"
-          data-uz="Chek yuborildi" data-ru="Чек отправлен">Chek yuborildi</div>
-        <div class="tl-time" id="time-payment_submitted"></div>
-        <div class="tl-sub" id="sub-payment_submitted"
-          data-uz="Admin tekshirmoqda, tez orada tasdiqlanadi" data-ru="Администратор проверяет, скоро подтвердит">
-          Admin tekshirmoqda, tez orada tasdiqlanadi
-        </div>
-      </div>
-    </div>
-
-    <div class="tl-item" id="tl-confirmed">
-      <div class="tl-left">
-        <div class="tl-dot" id="dot-confirmed">✅</div>
-        <div class="tl-line" id="line-confirmed"></div>
-      </div>
-      <div class="tl-content">
-        <div class="tl-title" id="title-confirmed"
-          data-uz="Buyurtma tasdiqlandi" data-ru="Заказ подтверждён">Buyurtma tasdiqlandi</div>
-        <div class="tl-time" id="time-confirmed"></div>
-        <div class="tl-sub" id="sub-confirmed"
-          data-uz="To'lov qabul qilindi, sovg'a tayyorlanmoqda" data-ru="Оплата принята, подарок готовится">
-          To'lov qabul qilindi, sovg'a tayyorlanmoqda
-        </div>
-      </div>
-    </div>
-
-    <div class="tl-item" id="tl-delivering">
-      <div class="tl-left">
-        <div class="tl-dot" id="dot-delivering">🚚</div>
-        <div class="tl-line" id="line-delivering"></div>
-      </div>
-      <div class="tl-content">
-        <div class="tl-title" id="title-delivering"
-          data-uz="Yo'lda!" data-ru="В пути!">Yo'lda!</div>
-        <div class="tl-time" id="time-delivering"></div>
-        <div class="tl-sub" id="sub-delivering"
-          data-uz="Kuryer sovg'angizni yetkazib bormoqda" data-ru="Курьер доставляет ваш подарок">
-          Kuryer sovg'angizni yetkazib bormoqda
-        </div>
-      </div>
-    </div>
-
-    <div class="tl-item" id="tl-delivered">
-      <div class="tl-left">
-        <div class="tl-dot" id="dot-delivered">🎉</div>
-        <div class="tl-line hidden"></div>
-      </div>
-      <div class="tl-content">
-        <div class="tl-title" id="title-delivered"
-          data-uz="Yetkazildi!" data-ru="Доставлено!">Yetkazildi!</div>
-        <div class="tl-time" id="time-delivered"></div>
-        <div class="tl-sub" id="sub-delivered"
-          data-uz="Sovg'a muvaffaqiyatli topshirildi 💝" data-ru="Подарок успешно вручён 💝">
-          Sovg'a muvaffaqiyatli topshirildi 💝
-        </div>
-      </div>
-    </div>
-
-  </div>
-
-  <div class="refresh-row" id="refresh-row">
-    <div class="spin"></div>
-    <span data-uz="Holat yangilanmoqda..." data-ru="Обновление статуса...">Holat yangilanmoqda...</span>
-  </div>
-
-  <div class="bottom-bar">
-    <button class="btn-secondary" onclick="goToScreen(3)"
-      data-uz="← Orqaga" data-ru="← Назад">← Orqaga</button>
-  </div>
-</div>
 
 <script src="app.js"></script>
 </body>

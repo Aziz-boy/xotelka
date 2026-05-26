@@ -399,10 +399,20 @@ async function placeOrder() {
     if (data.orderId) orderId = data.orderId;
   } catch (_) { /* show success anyway — offline resilience */ }
 
+  // Save to localStorage for status tracking
+  pendingOrderId = orderId;
+  savedOrder = { orderId };
+  localStorage.setItem('noirbox_order', JSON.stringify({ orderId }));
+
   closeCheckout();
   document.getElementById('success-order-id').textContent = `#${orderId.slice(0,8).toUpperCase()}`;
   document.getElementById('success-overlay').classList.add('active');
   if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+
+  // Show order banner
+  showOrderBanner();
+  document.getElementById('ob-status-txt').textContent = STATUS_LABELS['pending_payment'];
+  document.getElementById('ob-dot').className = 'ob-dot pending';
 
   cart = [];
   btn.textContent = 'Buyurtma berish';
@@ -415,15 +425,203 @@ function closeSuccess() {
   document.getElementById('cart-count').textContent = '0';
   document.getElementById('cart-items-label').textContent = '0 ta mahsulot';
   document.getElementById('cart-total').textContent = "0 so'm";
-  // Clear form
   ['senderName','recipientName','recipientPhone','recipientAddress','deliveryDate','message']
     .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  // Kick off status polling now the user dismissed success
+  fetchAndRenderStatus();
 }
 
 function genId() {
   return Math.random().toString(36).slice(2, 12);
 }
 
+// ── Order status tracking ───────────────────────────────────
+const STATUS_STEPS = [
+  { key: 'pending_payment',   label: "Buyurtma qabul qilindi", icon: '📋' },
+  { key: 'payment_submitted', label: "Chek yuborildi",          icon: '📤' },
+  { key: 'confirmed',         label: "Tasdiqlandi",             icon: '✅' },
+  { key: 'delivering',        label: "Yo'lda",                  icon: '🚚' },
+  { key: 'delivered',         label: "Yetkazildi",              icon: '🎉' },
+];
+
+const STATUS_LABELS = {
+  pending_payment:   "To'lov kutilmoqda",
+  payment_submitted: "Chek yuborildi — tekshirilmoqda",
+  confirmed:         "Tasdiqlandi — tayyorlanmoqda",
+  delivering:        "Yo'lda!",
+  delivered:         "Yetkazildi!",
+};
+
+let savedOrder    = null;
+let trackInterval = null;
+let pendingOrderId = null; // set right after placing order, before API confirms
+
+function checkSavedOrder() {
+  try {
+    const raw = localStorage.getItem('noirbox_order');
+    if (!raw) return;
+    savedOrder = JSON.parse(raw);
+    if (savedOrder?.orderId) {
+      showOrderBanner();
+      fetchAndRenderStatus();
+    }
+  } catch (_) { localStorage.removeItem('noirbox_order'); }
+}
+
+function showOrderBanner() {
+  const el = document.getElementById('order-banner');
+  el.classList.add('show');
+  document.getElementById('ob-id').textContent = '#' + savedOrder.orderId.slice(0, 8).toUpperCase();
+}
+
+async function fetchAndRenderStatus() {
+  if (!savedOrder?.orderId) return;
+  try {
+    const res  = await fetch(`/api/order/${savedOrder.orderId}`);
+    const data = await res.json();
+    if (!data.success) return;
+
+    const order = data.order;
+    savedOrder.order = order;
+
+    // Update banner
+    document.getElementById('ob-status-txt').textContent = STATUS_LABELS[order.status] || order.status;
+    const dot = document.getElementById('ob-dot');
+    dot.className = 'ob-dot';
+    if      (order.status === 'delivered')        dot.classList.add('done');
+    else if (order.status === 'pending_payment')  dot.classList.add('pending');
+    else                                          dot.classList.add('processing');
+
+    // Update status modal if open
+    if (document.getElementById('status-modal').classList.contains('open')) {
+      renderStatusContent(order);
+    }
+
+    // Stop polling once delivered
+    if (order.status === 'delivered') {
+      if (trackInterval) { clearInterval(trackInterval); trackInterval = null; }
+      localStorage.removeItem('noirbox_order');
+    }
+  } catch (_) {}
+}
+
+function openStatusModal() {
+  document.getElementById('status-overlay').classList.add('active');
+  document.getElementById('status-modal').classList.add('open');
+
+  if (savedOrder?.order) {
+    renderStatusContent(savedOrder.order);
+  } else {
+    document.getElementById('status-meta').innerHTML =
+      '<p style="color:var(--neutral);font-size:13px;padding:8px 0">Yuklanmoqda...</p>';
+    document.getElementById('timeline').innerHTML = '';
+    fetchAndRenderStatus();
+  }
+
+  if (!trackInterval) {
+    trackInterval = setInterval(fetchAndRenderStatus, 5000);
+  }
+}
+
+function closeStatusModal() {
+  document.getElementById('status-overlay').classList.remove('active');
+  document.getElementById('status-modal').classList.remove('open');
+  if (trackInterval) { clearInterval(trackInterval); trackInterval = null; }
+}
+
+function renderStatusContent(order) {
+  // Meta card
+  const dateStr = order.deliveryDate
+    ? `<div class="smeta-row"><span class="smeta-label">Yetkazish sanasi</span><span class="smeta-value">${order.deliveryDate}</span></div>`
+    : '';
+  document.getElementById('status-meta').innerHTML = `
+    <div class="smeta-row">
+      <span class="smeta-label">ID</span>
+      <span class="smeta-value" style="font-family:monospace">#${order.id.slice(0,8).toUpperCase()}</span>
+    </div>
+    <div class="smeta-row">
+      <span class="smeta-label">Quti</span>
+      <span class="smeta-value">${order.packageName}</span>
+    </div>
+    <div class="smeta-row">
+      <span class="smeta-label">Summa</span>
+      <span class="smeta-value">${fmt(order.price)}</span>
+    </div>
+    <div class="smeta-row">
+      <span class="smeta-label">Qabul qiluvchi</span>
+      <span class="smeta-value">${order.recipientName} · ${order.recipientPhone}</span>
+    </div>
+    ${dateStr}`;
+
+  // Timeline
+  const curIdx = STATUS_STEPS.findIndex(s => s.key === order.status);
+  document.getElementById('timeline').innerHTML = STATUS_STEPS.map((step, i) => {
+    const done   = i < curIdx;
+    const active = i === curIdx;
+    const last   = i === STATUS_STEPS.length - 1;
+    return `
+      <div class="tl-step">
+        <div class="tl-left">
+          <div class="tl-dot ${done ? 'done' : active ? 'active' : ''}">${done ? '✓' : step.icon}</div>
+          ${!last ? `<div class="tl-line ${done ? 'done' : ''}"></div>` : ''}
+        </div>
+        <div class="tl-content">
+          <div class="tl-title ${done ? 'done' : active ? 'active' : ''}">${step.label}</div>
+          ${active && order.updatedAt ? `<div class="tl-time">${fmtTime(order.updatedAt)}</div>` : ''}
+        </div>
+      </div>`;
+  }).join('');
+
+  // Footer button
+  const footer = document.getElementById('status-footer');
+  if (order.status === 'pending_payment') {
+    footer.style.display = 'flex';
+    footer.innerHTML = `<button class="btn-red full-width" onclick="sendReceipt()">To'lov chekini yuborish 📸</button>`;
+  } else {
+    footer.style.display = 'none';
+  }
+}
+
+function fmtTime(iso) {
+  try {
+    return new Date(iso).toLocaleString('ru-RU', {
+      day: '2-digit', month: '2-digit',
+      hour: '2-digit', minute: '2-digit'
+    });
+  } catch { return ''; }
+}
+
+// ── Send receipt (payment-sent) ─────────────────────────────
+async function sendReceipt() {
+  const orderId = savedOrder?.orderId || pendingOrderId;
+  if (!orderId) return;
+
+  const btn = document.getElementById('btn-send-receipt') ||
+              document.querySelector('#status-footer .btn-red');
+  if (btn) { btn.textContent = 'Yuborilmoqda...'; btn.disabled = true; }
+
+  try {
+    await fetch(`/api/order/${orderId}/payment-sent`, { method: 'POST' });
+    if (savedOrder) { savedOrder.order = null; } // force re-fetch
+    fetchAndRenderStatus();
+
+    showToast("Telegram botga to'lov rasmini yuboring 📸");
+
+    // If inside Telegram WebApp — close it so user can message the bot
+    if (tg?.close) {
+      setTimeout(() => tg.close(), 1200);
+    } else {
+      // Web browser fallback: just update UI
+      closeSuccess();
+      openStatusModal();
+    }
+  } catch (_) {
+    showToast("Xatolik yuz berdi, qayta urinib ko'ring");
+    if (btn) { btn.textContent = "To'lov chekini yuborish 📸"; btn.disabled = false; }
+  }
+}
+
 // ── Init ────────────────────────────────────────────────────
 document.getElementById('deliveryDate').min = new Date().toISOString().split('T')[0];
 renderCatalog();
+checkSavedOrder();

@@ -27,33 +27,54 @@ router.get("/packages", (req, res) => {
 router.post("/order", async (req, res) => {
   try {
     const {
-      telegramUserId, telegramUsername, packageId,
+      telegramUserId, telegramUsername,
+      packageId,     // legacy single-package format
+      items,         // new format: [{id, name, price, qty}]
+      totalPrice,
+      senderName,
       recipientName, recipientPhone, recipientAddress,
-      deliveryDate, deliveryTime, message, language,
+      deliveryDate, message,
     } = req.body;
 
-    if (!packageId || !recipientName || !recipientPhone || !recipientAddress) {
+    if (!recipientName || !recipientPhone || !recipientAddress) {
       return res.status(400).json({ success: false, error: "Missing required fields" });
     }
 
-    const pkg = db.getPackageById(packageId);
-    if (!pkg) return res.status(404).json({ success: false, error: "Package not found" });
+    let resolvedPackageId, packageName, packageEmoji, price;
+
+    if (items && items.length > 0) {
+      // New webapp: cart of boxes
+      resolvedPackageId = items.map(i => i.id).join(",");
+      packageName = items.map(i => i.qty > 1 ? `${i.name} ×${i.qty}` : i.name).join(", ");
+      packageEmoji = "🎁";
+      price = totalPrice || items.reduce((s, i) => s + i.price * i.qty, 0);
+    } else if (packageId) {
+      // Legacy single-package
+      const pkg = db.getPackageById(packageId);
+      if (!pkg) return res.status(404).json({ success: false, error: "Package not found" });
+      resolvedPackageId = packageId;
+      packageName = pkg.name_uz;
+      packageEmoji = pkg.emoji;
+      price = pkg.price;
+    } else {
+      return res.status(400).json({ success: false, error: "No package or items specified" });
+    }
 
     const order = await db.addOrder({
       id: uuidv4(),
       telegramUserId: String(telegramUserId || "unknown"),
       telegramUsername: telegramUsername || "",
-      packageId,
-      packageName: pkg.name_uz,
-      packageEmoji: pkg.emoji,
-      price: pkg.price,
+      packageId: resolvedPackageId,
+      packageName,
+      packageEmoji,
+      price,
+      items: items || null,
+      senderName: senderName || "",
       recipientName,
       recipientPhone,
       recipientAddress,
       deliveryDate: deliveryDate || null,
-      deliveryTime: deliveryTime || null,
       message: message || "",
-      language: language || "uz",
       status: "pending_payment",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -61,7 +82,7 @@ router.post("/order", async (req, res) => {
 
     const bot = req.app.get("bot");
     if (bot) {
-      notifyAdminNewOrder(bot, order, pkg).catch(err =>
+      notifyAdminNewOrder(bot, order).catch(err =>
         console.error("Admin notify failed:", err.message)
       );
     }
@@ -86,14 +107,18 @@ router.post("/order/:id/payment-sent", async (req, res) => {
 
     const bot = req.app.get("bot");
     if (bot && order.telegramUserId !== "unknown") {
-      bot.telegram.sendMessage(
-        order.telegramUserId,
-        `📸 <b>To'lov chekini yuboring!</b>\n\n` +
-        `Iltimos, to'lov chekini <b>rasm (photo)</b> sifatida shu botga yuboring.\n\n` +
-        `Buyurtma: <code>#${order.id.slice(0, 8).toUpperCase()}</code>\n` +
-        `Summa: <b>${order.price.toLocaleString()} so'm</b>`,
-        { parse_mode: "HTML" }
-      ).catch(err => console.error("Could not message user:", err.message));
+      try {
+        bot.telegram.sendMessage(
+          order.telegramUserId,
+          `📸 <b>To'lov chekini yuboring!</b>\n\n` +
+          `Iltimos, to'lov chekini <b>rasm (photo)</b> sifatida shu botga yuboring.\n\n` +
+          `Buyurtma: <code>#${order.id.slice(0, 8).toUpperCase()}</code>\n` +
+          `Summa: <b>${order.price.toLocaleString()} so'm</b>`,
+          { parse_mode: "HTML" }
+        ).catch(err => console.error("payment-sent sendMessage failed:", err.message));
+      } catch (err) {
+        console.error("payment-sent sendMessage error:", err.message);
+      }
     }
 
     res.json({ success: true });
@@ -124,22 +149,29 @@ router.get("/orders", async (req, res) => {
 });
 
 // ─── Notify admin group about new order ────────────────────────
-async function notifyAdminNewOrder(bot, order, pkg) {
+async function notifyAdminNewOrder(bot, order) {
   const adminGroupId = process.env.ADMIN_GROUP_ID;
-  const card = process.env.PAYMENT_CARD;
-  const cardName = process.env.PAYMENT_NAME;
+  const card        = process.env.PAYMENT_CARD;
+  const cardName    = process.env.PAYMENT_NAME;
+
+  const itemsLine = order.items
+    ? "\n📦 <b>Tarkibi:</b>\n" + order.items.map(i =>
+        `  • ${i.name}${i.qty > 1 ? ` ×${i.qty}` : ""}`
+      ).join("\n")
+    : "";
 
   await bot.telegram.sendMessage(
     adminGroupId,
     `🎁 <b>YANGI BUYURTMA!</b>\n\n` +
-    `${pkg.emoji} <b>${pkg.name_uz}</b> — ${order.price.toLocaleString()} so'm\n\n` +
-    `👤 <b>Xaridor:</b> @${order.telegramUsername || "noma'lum"} (ID: ${order.telegramUserId})\n` +
+    `${order.packageEmoji} <b>${order.packageName}</b> — ${order.price.toLocaleString()} so'm\n` +
+    itemsLine + `\n\n` +
+    `👤 <b>Yuboruvchi:</b> ${order.senderName || "—"} (@${order.telegramUsername || "noma'lum"}, ID: ${order.telegramUserId})\n` +
     `👧 <b>Qabul qiluvchi:</b> ${order.recipientName}\n` +
     `📞 <b>Tel:</b> ${order.recipientPhone}\n` +
     `📍 <b>Manzil:</b> ${order.recipientAddress}\n` +
-    `📅 <b>Yetkazish:</b> ${order.deliveryDate || "Ko'rsatilmagan"} ${order.deliveryTime || ""}\n` +
+    `📅 <b>Yetkazish:</b> ${order.deliveryDate || "Ko'rsatilmagan"}\n` +
     `💌 <b>Xabar:</b> ${order.message || "—"}\n\n` +
-    `🆔 ID: <code>${order.id.slice(0, 8)}</code>\n\n` +
+    `🆔 ID: <code>${order.id.slice(0, 8).toUpperCase()}</code>\n\n` +
     `⏳ To'lov cheki kutilmoqda...`,
     { parse_mode: "HTML" }
   );

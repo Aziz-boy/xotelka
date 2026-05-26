@@ -36,6 +36,19 @@
   </div>
 </header>
 
+<!-- ══ ACTIVE ORDER BANNER ══ -->
+<div class="order-banner" id="order-banner" onclick="openStatusModal()">
+  <div class="ob-info">
+    <span class="ob-dot" id="ob-dot"></span>
+    <div>
+      <div class="ob-heading">Faol buyurtma</div>
+      <div class="ob-status-txt" id="ob-status-txt">Yuklanmoqda...</div>
+    </div>
+  </div>
+  <span class="ob-id" id="ob-id"></span>
+  <span class="ob-arrow">›</span>
+</div>
+
 <!-- ══ CATALOG ══ -->
 <main class="nb-catalog">
   <div class="catalog-label">Kolleksiyalar</div>
@@ -115,6 +128,22 @@
   </div>
 </div>
 
+<!-- ══ STATUS MODAL ══ -->
+<div class="modal-overlay" id="status-overlay" onclick="closeStatusModal()"></div>
+<div class="modal-sheet" id="status-modal" role="dialog">
+  <div class="modal-handle"></div>
+  <div class="checkout-header">
+    <h3 class="checkout-title">Buyurtma holati</h3>
+    <button class="modal-close static" onclick="closeStatusModal()">✕</button>
+  </div>
+  <div class="status-scroll">
+    <div class="status-meta" id="status-meta"></div>
+    <div class="tl-section-label">JARAYON</div>
+    <div class="timeline" id="timeline"></div>
+  </div>
+  <div class="modal-footer" id="status-footer" style="display:none"></div>
+</div>
+
 <!-- ══ SUCCESS OVERLAY ══ -->
 <div class="success-overlay" id="success-overlay">
   <div class="success-content">
@@ -125,9 +154,14 @@
       </svg>
     </div>
     <h2 class="success-title">Buyurtma qabul qilindi</h2>
-    <p class="success-sub">Tez orada siz bilan bog'lanamiz va yetkazib berish tafsilotlarini tasdiqlashadi.</p>
+    <p class="success-sub">To'lov amalga oshirgach, chekni Telegram botga rasm sifatida yuboring.</p>
     <div class="success-order-id" id="success-order-id"></div>
-    <button class="btn-red" onclick="closeSuccess()" style="margin-top:28px;width:100%;padding:15px">Bosh sahifaga</button>
+    <button class="btn-red" id="btn-send-receipt" onclick="sendReceipt()" style="margin-top:20px;width:100%;padding:15px">
+      To'lov chekini yuborish
+    </button>
+    <button onclick="closeSuccess()" style="margin-top:10px;width:100%;padding:12px;background:none;border:none;color:var(--neutral);font-family:var(--sans);font-size:13px;cursor:pointer;letter-spacing:0.5px">
+      Keyinroq
+    </button>
   </div>
 </div>
 
